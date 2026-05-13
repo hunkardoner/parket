@@ -1,6 +1,5 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Parket! design tokens — spacing, typography, layout, and semantic colours.
  */
 
 import '@/global.css';
@@ -9,24 +8,28 @@ import { Platform } from 'react-native';
 
 import { ParkingPalette } from '@/constants/brand';
 
+/* ── Semantic colour schemes ─────────────────────── */
+
 export const Colors = {
   light: {
     text: ParkingPalette.ink,
-    background: '#fbfdff',
-    backgroundElement: '#edf6fb',
-    backgroundSelected: '#d7ecf8',
-    textSecondary: '#66727c',
+    background: '#F5F8FB',
+    backgroundElement: '#E8F0F7',
+    backgroundSelected: '#CEDFEF',
+    textSecondary: '#5F7288',
   },
   dark: {
-    text: '#ffffff',
-    background: '#101820',
-    backgroundElement: '#1b2a35',
-    backgroundSelected: '#263f51',
-    textSecondary: '#b7c4cd',
+    text: '#F0F4F8',
+    background: '#0C1420',
+    backgroundElement: '#162232',
+    backgroundSelected: '#1F3650',
+    textSecondary: '#93A8BD',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+
+/* ── Typography ──────────────────────────────────── */
 
 export const Fonts = Platform.select({
   ios: {
@@ -53,6 +56,8 @@ export const Fonts = Platform.select({
   },
 });
 
+/* ── Spacing scale ───────────────────────────────── */
+
 export const Spacing = {
   half: 2,
   one: 4,
@@ -62,6 +67,19 @@ export const Spacing = {
   five: 32,
   six: 64,
 } as const;
+
+/* ── Radius scale ────────────────────────────────── */
+
+export const Radius = {
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 28,
+  full: 9999,
+} as const;
+
+/* ── Layout ──────────────────────────────────────── */
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

@@ -6,12 +6,13 @@ import {
   TabTrigger,
   TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ParkingPalette, Shadows } from '@/constants/brand';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
@@ -37,41 +38,26 @@ export default function AppTabs() {
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+      <View style={[styles.tabBtn, isFocused && styles.tabBtnActive]}>
+        <ThemedText
+          type="smallBold"
+          style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+      <View style={[styles.innerContainer, Shadows.md]}>
         <ThemedText type="smallBold" style={styles.brandText}>
-          Parket!
+          🅿️ Parket!
         </ThemedText>
-
         {props.children}
-{/* 
-        <ExternalLink href="https://api.ibb.gov.tr/ispark/Park" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">İSPARK</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink> */}
-      </ThemedView>
+      </View>
     </View>
   );
 }
@@ -87,30 +73,38 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     flexGrow: 1,
-    gap: Spacing.two,
+    gap: Spacing.one,
     maxWidth: MaxContentWidth,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    backdropFilter: 'blur(16px)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 223, 233, 0.5)',
   },
   brandText: {
     marginRight: 'auto',
+    color: ParkingPalette.ink,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
+  pressed: { opacity: 0.7 },
+  tabBtn: {
+    paddingVertical: Spacing.one + 2,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.full,
   },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
+  tabBtnActive: {
+    backgroundColor: ParkingPalette.blue,
+  },
+  tabLabel: {
+    color: ParkingPalette.muted,
+  },
+  tabLabelActive: {
+    color: '#FFFFFF',
   },
 });

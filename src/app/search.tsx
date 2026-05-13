@@ -13,8 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { ParkingPalette } from '@/constants/brand';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ParkingPalette, Shadows } from '@/constants/brand';
+import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { openWalkingDirections } from '@/services/directions';
 import { distanceInMeters, fetchParkingLots, formatDistance } from '@/services/ispark';
 import { loadLastKnownLocation, saveLastKnownLocation } from '@/services/location-store';
@@ -24,18 +24,9 @@ const radiusOptions = [300, 500, 1000, 2000, 5000];
 
 async function requestCurrentLocation() {
   const permission = await Location.requestForegroundPermissionsAsync();
-  if (permission.status !== 'granted') {
-    throw new Error('Konum izni verilmedi.');
-  }
-
-  const position = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.Balanced,
-  });
-
-  return {
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-  };
+  if (permission.status !== 'granted') throw new Error('Konum izni verilmedi.');
+  const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  return { latitude: position.coords.latitude, longitude: position.coords.longitude };
 }
 
 export default function ParkingSearchScreen() {
@@ -47,11 +38,7 @@ export default function ParkingSearchScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadLastKnownLocation().then((location) => {
-      if (location) {
-        setCurrentLocation(location);
-      }
-    });
+    loadLastKnownLocation().then((location) => { if (location) setCurrentLocation(location); });
   }, []);
 
   const findParking = useCallback(async () => {
@@ -65,27 +52,18 @@ export default function ParkingSearchScreen() {
       setLots(nextLots);
       setHasSearched(true);
     } catch (searchError) {
-      const message =
-        searchError instanceof Error ? searchError.message : 'Otopark araması başlatılamadı.';
+      const message = searchError instanceof Error ? searchError.message : 'Otopark araması başlatılamadı.';
       setError(message);
       Alert.alert('Otopark bulunamadı', message);
-    } finally {
-      setSearching(false);
-    }
+    } finally { setSearching(false); }
   }, [currentLocation]);
 
   const results = useMemo(() => {
-    if (!currentLocation) {
-      return [];
-    }
-
+    if (!currentLocation) return [];
     return lots
       .map((lot) => ({
         ...lot,
-        distanceMeters: distanceInMeters(currentLocation, {
-          latitude: lot.latitude,
-          longitude: lot.longitude,
-        }),
+        distanceMeters: distanceInMeters(currentLocation, { latitude: lot.latitude, longitude: lot.longitude }),
       }))
       .filter((lot) => lot.distanceMeters <= radius)
       .filter((lot) => lot.isOpen && lot.emptyCapacity > 0)
@@ -95,97 +73,83 @@ export default function ParkingSearchScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <SafeAreaView style={styles.safeArea}>
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <ThemedText style={styles.eyebrow}>Otopark arama</ThemedText>
-          <ThemedText type="title" style={styles.title}>
-            Otopark arıyorum
-          </ThemedText>
-          <ThemedText style={styles.copy}>
-            Mesafe aralığını seç, Parket sana açık ve boş kapasitesi olan yakındaki otoparkları
-            listelesin.
+          <ThemedText type="overline" style={styles.overline}>Otopark arama</ThemedText>
+          <ThemedText type="title" style={styles.title}>Otopark arıyorum</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Mesafe aralığını seç, Parket sana açık ve boş kapasitesi olan yakındaki otoparkları listelesin.
           </ThemedText>
         </View>
 
-        <View style={styles.searchCard}>
-          <ThemedText type="smallBold" style={styles.sectionTitle}>
-            Kaç metre aralığında aransın?
-          </ThemedText>
+        {/* ── Search card ── */}
+        <View style={[styles.searchCard, Shadows.md]}>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>📍  Kaç metre aralığında aransın?</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.radiusRow}>
             {radiusOptions.map((option) => (
               <Pressable
                 key={option}
-                style={[styles.radiusButton, radius === option && styles.radiusButtonActive]}
+                style={[styles.radiusChip, radius === option && styles.radiusChipActive]}
                 onPress={() => setRadius(option)}>
-                <ThemedText
-                  type="smallBold"
-                  style={[styles.radiusText, radius === option && styles.radiusTextActive]}>
+                <ThemedText type="smallBold" style={[styles.radiusText, radius === option && styles.radiusTextActive]}>
                   {option < 1000 ? `${option} m` : `${option / 1000} km`}
                 </ThemedText>
               </Pressable>
             ))}
           </ScrollView>
-
-          <Pressable style={styles.primaryButton} onPress={findParking} disabled={isSearching}>
+          <Pressable style={styles.searchBtn} onPress={findParking} disabled={isSearching}>
             {isSearching ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                Otopark arıyorum
-              </ThemedText>
+              <ThemedText type="smallBold" style={styles.searchBtnText}>🔍  Otopark arıyorum</ThemedText>
             )}
           </Pressable>
         </View>
 
-        <ParkingMap lots={results.slice(0, 10)} currentLocation={currentLocation} />
+        {/* ── Map ── */}
+        <View style={styles.mapWrap}>
+          <ParkingMap lots={results.slice(0, 10)} currentLocation={currentLocation} />
+        </View>
 
+        {/* ── Results header ── */}
         <View style={styles.resultsHeader}>
-          <ThemedText type="smallBold" style={styles.sectionTitle}>
-            Sonuçlar
-          </ThemedText>
-          <ThemedText type="small" style={styles.resultMeta}>
-            {hasSearched ? `${results.length} uygun otopark` : 'Arama bekleniyor'}
-          </ThemedText>
+          <ThemedText type="smallBold" style={{ color: ParkingPalette.ink }}>Sonuçlar</ThemedText>
+          <View style={styles.resultsBadge}>
+            <ThemedText type="caption" style={{ color: ParkingPalette.blue }}>
+              {hasSearched ? `${results.length} uygun` : 'Arama bekleniyor'}
+            </ThemedText>
+          </View>
         </View>
 
         {error ? (
-          <View style={styles.notice}>
-            <ThemedText type="small" style={styles.noticeText}>
-              {error}
-            </ThemedText>
+          <View style={styles.errorCard}>
+            <ThemedText type="small" style={{ color: '#7A3B39' }}>⚠️  {error}</ThemedText>
           </View>
         ) : null}
 
+        {/* ── Result cards ── */}
         <View style={styles.resultList}>
           {results.map((lot) => (
-            <View key={lot.id} style={styles.resultCard}>
+            <View key={lot.id} style={[styles.resultCard, Shadows.sm]}>
               <View style={styles.resultTop}>
-                <View style={styles.resultTitleBlock}>
-                  <ThemedText type="smallBold" style={styles.resultTitle}>
-                    {lot.name}
-                  </ThemedText>
-                  <ThemedText type="small" style={styles.resultSubtitle}>
-                    {lot.district} - {lot.type} - {formatDistance(lot.distanceMeters)}
+                <View style={{ flex: 1, gap: 3 }}>
+                  <ThemedText type="smallBold" style={{ color: ParkingPalette.ink, fontSize: 15 }}>{lot.name}</ThemedText>
+                  <ThemedText type="caption" style={{ color: ParkingPalette.muted }}>
+                    {lot.district} · {lot.type} · {formatDistance(lot.distanceMeters)}
                   </ThemedText>
                 </View>
-                <ThemedText type="smallBold" style={styles.emptyText}>
-                  {lot.emptyCapacity} boş
-                </ThemedText>
+                <View style={styles.emptyBadge}>
+                  <ThemedText type="smallBold" style={{ color: ParkingPalette.success }}>{lot.emptyCapacity} boş</ThemedText>
+                </View>
               </View>
               <View style={styles.resultBottom}>
-                <ThemedText type="small" style={styles.resultSubtitle}>
-                  {lot.workHours} - {lot.freeTime} dk ücretsiz
+                <ThemedText type="caption" style={{ color: ParkingPalette.muted }}>
+                  {lot.workHours} · {lot.freeTime} dk ücretsiz
                 </ThemedText>
                 <Pressable
-                  style={styles.routeButton}
-                  onPress={() =>
-                    openWalkingDirections(
-                      { latitude: lot.latitude, longitude: lot.longitude },
-                      lot.name
-                    )
-                  }>
-                  <ThemedText type="smallBold" style={styles.routeText}>
-                    Rota
-                  </ThemedText>
+                  style={styles.routeChip}
+                  onPress={() => openWalkingDirections({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}>
+                  <ThemedText type="smallBold" style={{ color: ParkingPalette.blue }}>🧭 Rota</ThemedText>
                 </Pressable>
               </View>
             </View>
@@ -193,12 +157,9 @@ export default function ParkingSearchScreen() {
 
           {hasSearched && results.length === 0 ? (
             <View style={styles.emptyState}>
-              <ThemedText type="smallBold" style={styles.resultTitle}>
-                Bu aralıkta uygun otopark yok
-              </ThemedText>
-              <ThemedText type="small" style={styles.resultSubtitle}>
-                Mesafeyi artırıp tekrar arayabilirsin.
-              </ThemedText>
+              <ThemedText style={styles.emptyEmoji}>🚫</ThemedText>
+              <ThemedText type="smallBold" style={{ color: ParkingPalette.ink }}>Bu aralıkta uygun otopark yok</ThemedText>
+              <ThemedText type="caption" style={{ color: ParkingPalette.muted }}>Mesafeyi artırıp tekrar arayabilirsin.</ThemedText>
             </View>
           ) : null}
         </View>
@@ -208,153 +169,83 @@ export default function ParkingSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#fbfdff',
-  },
+  screen: { flex: 1, backgroundColor: '#F0F4F8' },
   content: {
     alignItems: 'center',
-    paddingTop: Platform.select({ web: 74, default: 0 }),
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingTop: Platform.select({ web: 80, default: 0 }),
+    paddingBottom: BottomTabInset + Spacing.six,
   },
   safeArea: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.three,
+    width: '100%', maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.three, gap: Spacing.three,
   },
-  header: {
-    gap: Spacing.one,
-    paddingTop: Spacing.two,
-  },
-  eyebrow: {
-    color: ParkingPalette.violet,
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: ParkingPalette.ink,
-    fontSize: 40,
-    lineHeight: 44,
-  },
-  copy: {
-    color: '#4d5963',
-  },
+
+  /* Header */
+  header: { gap: 6, paddingTop: Spacing.two },
+  overline: { color: ParkingPalette.violet },
+  title: { color: ParkingPalette.ink },
+  subtitle: { color: ParkingPalette.muted, fontSize: 14, lineHeight: 20 },
+
+  /* Search */
   searchCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    padding: Spacing.three,
-    gap: Spacing.three,
+    borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: ParkingPalette.ink,
   },
-  sectionTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 18,
+  sectionTitle: { color: '#FFFFFF', fontSize: 16, padding: Spacing.four, paddingBottom: 0 },
+  radiusRow: { gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  radiusChip: {
+    borderRadius: Radius.full, borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'transparent',
+    paddingHorizontal: 16, paddingVertical: 10,
   },
-  radiusRow: {
-    gap: Spacing.two,
-  },
-  radiusButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  radiusButtonActive: {
-    borderColor: ParkingPalette.blue,
+  radiusChipActive: { borderColor: ParkingPalette.blue, backgroundColor: ParkingPalette.blue },
+  radiusText: { color: 'rgba(255,255,255,0.65)' },
+  radiusTextActive: { color: '#FFFFFF' },
+  searchBtn: {
+    margin: Spacing.four, marginTop: Spacing.two,
+    minHeight: 48, borderRadius: Radius.full,
     backgroundColor: ParkingPalette.blue,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 20, paddingVertical: 13,
+    ...Shadows.glow(ParkingPalette.blue),
   },
-  radiusText: {
-    color: ParkingPalette.ink,
-  },
-  radiusTextActive: {
-    color: '#ffffff',
-  },
-  primaryButton: {
-    minHeight: 48,
-    borderRadius: 8,
-    backgroundColor: ParkingPalette.blue,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-  },
+  searchBtnText: { color: '#FFFFFF' },
+
+  /* Map */
+  mapWrap: { borderRadius: Radius.md, overflow: 'hidden', ...Shadows.md },
+
+  /* Results */
   resultsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  resultMeta: {
-    color: '#687783',
+  resultsBadge: {
+    borderRadius: Radius.full, backgroundColor: '#E6F2FB',
+    paddingHorizontal: 10, paddingVertical: 3,
   },
-  notice: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ffd2c6',
-    backgroundColor: '#fff3ef',
-    padding: Spacing.two,
+  errorCard: {
+    borderRadius: Radius.sm, borderWidth: 1, borderColor: ParkingPalette.coral,
+    backgroundColor: ParkingPalette.coralLight, padding: Spacing.two,
   },
-  noticeText: {
-    color: '#755045',
-  },
-  resultList: {
-    gap: Spacing.two,
-  },
+  resultList: { gap: Spacing.two },
   resultCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    padding: Spacing.three,
-    gap: Spacing.two,
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: Spacing.two,
   },
-  resultTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  resultTitleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  resultTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 17,
-  },
-  resultSubtitle: {
-    color: '#687783',
-  },
-  emptyText: {
-    color: ParkingPalette.success,
+  resultTop: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
+  emptyBadge: {
+    borderRadius: Radius.full, backgroundColor: ParkingPalette.successLight,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
   resultBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: Spacing.two,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two,
   },
-  routeButton: {
-    borderRadius: 8,
-    backgroundColor: '#edf6fb',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  routeText: {
-    color: ParkingPalette.blue,
+  routeChip: {
+    borderRadius: Radius.full, backgroundColor: '#EBF5FF',
+    paddingHorizontal: 14, paddingVertical: 8,
   },
   emptyState: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e3c986',
-    backgroundColor: ParkingPalette.sand,
-    padding: Spacing.three,
-    gap: Spacing.one,
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.amberLight,
+    borderWidth: 1, borderColor: ParkingPalette.amber,
+    padding: Spacing.four, gap: 8, alignItems: 'center',
   },
+  emptyEmoji: { fontSize: 36 },
 });

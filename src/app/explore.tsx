@@ -15,8 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { ParkingPalette } from '@/constants/brand';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ParkingPalette, Shadows } from '@/constants/brand';
+import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuthSession } from '@/hooks/use-auth-session';
 import { openWalkingDirections } from '@/services/directions';
 import { formatDistance, distanceInMeters } from '@/services/ispark';
@@ -36,27 +36,16 @@ function makeVehicleId() {
 
 async function getCurrentCoordinates() {
   const permission = await Location.requestForegroundPermissionsAsync();
-  if (permission.status !== 'granted') {
-    throw new Error('Konum izni verilmedi.');
-  }
-
-  const position = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.High,
-  });
-
-  return {
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-  };
+  if (permission.status !== 'granted') throw new Error('Konum izni verilmedi.');
+  const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+  return { latitude: position.coords.latitude, longitude: position.coords.longitude };
 }
 
 async function reverseAddress(coordinates: Coordinates) {
   try {
     const [address] = await Location.reverseGeocodeAsync(coordinates);
     return [address?.district, address?.street, address?.name].filter(Boolean).join(' - ');
-  } catch {
-    return undefined;
-  }
+  } catch { return undefined; }
 }
 
 export default function VehicleScreen() {
@@ -73,11 +62,7 @@ export default function VehicleScreen() {
   }, []);
 
   useEffect(() => {
-    loadLastKnownLocation().then((location) => {
-      if (location) {
-        setCurrentLocation(location);
-      }
-    });
+    loadLastKnownLocation().then((location) => { if (location) setCurrentLocation(location); });
     void reload();
   }, [reload]);
 
@@ -88,27 +73,17 @@ export default function VehicleScreen() {
       await saveLastKnownLocation(coordinates);
       const addressHint = await reverseAddress(coordinates);
       const nextVehicle: ParkedVehicle = {
-        id: makeVehicleId(),
-        source: 'street',
-        title: addressHint || 'Sokakta park',
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        addressHint,
-        createdAt: new Date().toISOString(),
+        id: makeVehicleId(), source: 'street', title: addressHint || 'Sokakta park',
+        latitude: coordinates.latitude, longitude: coordinates.longitude,
+        addressHint, createdAt: new Date().toISOString(),
       };
-
       await saveParkedVehicle(nextVehicle);
       await notifyParkingSaved(nextVehicle.title);
       setVehicle(nextVehicle);
       setCurrentLocation(coordinates);
     } catch (error) {
-      Alert.alert(
-        'Park kaydı başlatılamadı',
-        error instanceof Error ? error.message : 'Konum servisi kullanılamıyor.'
-      );
-    } finally {
-      setBusy(false);
-    }
+      Alert.alert('Park kaydı başlatılamadı', error instanceof Error ? error.message : 'Konum servisi kullanılamıyor.');
+    } finally { setBusy(false); }
   }, []);
 
   const endParking = useCallback(async () => {
@@ -122,16 +97,8 @@ export default function VehicleScreen() {
       Alert.alert('Kamera izni gerekli', 'Park ettiğin sokağı fotoğraflamak için kamera izni ver.');
       return;
     }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: 'images',
-      quality: 0.72,
-      allowsEditing: false,
-    });
-
-    if (result.canceled || !result.assets[0]) {
-      return;
-    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.72, allowsEditing: false });
+    if (result.canceled || !result.assets[0]) return;
 
     let nextVehicle = vehicle;
     if (!nextVehicle) {
@@ -139,30 +106,19 @@ export default function VehicleScreen() {
       await saveLastKnownLocation(coordinates);
       const addressHint = await reverseAddress(coordinates);
       nextVehicle = {
-        id: makeVehicleId(),
-        source: 'street',
-        title: addressHint || 'Sokakta park',
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        addressHint,
-        createdAt: new Date().toISOString(),
+        id: makeVehicleId(), source: 'street', title: addressHint || 'Sokakta park',
+        latitude: coordinates.latitude, longitude: coordinates.longitude,
+        addressHint, createdAt: new Date().toISOString(),
       };
     }
-
     const withPhoto = { ...nextVehicle, photoUri: result.assets[0].uri };
     await saveParkedVehicle(withPhoto);
     setVehicle(withPhoto);
   }, [vehicle]);
 
   const returnToVehicle = useCallback(async () => {
-    if (!vehicle) {
-      Alert.alert('Kayıtlı araç yok', 'Önce Başla ile park konumunu kaydet.');
-      return;
-    }
-    await openWalkingDirections(
-      { latitude: vehicle.latitude, longitude: vehicle.longitude },
-      vehicle.title
-    );
+    if (!vehicle) { Alert.alert('Kayıtlı araç yok', 'Önce Başla ile park konumunu kaydet.'); return; }
+    await openWalkingDirections({ latitude: vehicle.latitude, longitude: vehicle.longitude }, vehicle.title);
   }, [vehicle]);
 
   const reportEmptySpot = useCallback(async () => {
@@ -172,86 +128,66 @@ export default function VehicleScreen() {
       await saveLastKnownLocation(coordinates);
       setCurrentLocation(coordinates);
       const report = await createStreetReport({
-        coordinates,
-        note: 'Yakınımda boş sokak park yeri var.',
-        photoUri: vehicle?.photoUri,
-        userId: auth.user?.id,
+        coordinates, note: 'Yakınımda boş sokak park yeri var.',
+        photoUri: vehicle?.photoUri, userId: auth.user?.id,
       });
-
       setReports((current) => [report, ...current.filter((item) => item.id !== report.id)]);
       Alert.alert('Boş yer bildirildi', 'Bildirim 90 dakika boyunca sokakta park arayanlara görünür.');
     } catch (error) {
-      Alert.alert(
-        'Bildirim oluşturulamadı',
-        error instanceof Error ? error.message : 'Konum servisi kullanılamıyor.'
-      );
-    } finally {
-      setBusy(false);
-    }
+      Alert.alert('Bildirim oluşturulamadı', error instanceof Error ? error.message : 'Konum servisi kullanılamıyor.');
+    } finally { setBusy(false); }
   }, [auth.user?.id, vehicle?.photoUri]);
 
   const decoratedReports = currentLocation
     ? reports.map((report) => ({
         ...report,
-        distanceMeters: distanceInMeters(currentLocation, {
-          latitude: report.latitude,
-          longitude: report.longitude,
-        }),
+        distanceMeters: distanceInMeters(currentLocation, { latitude: report.latitude, longitude: report.longitude }),
       }))
     : reports;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <SafeAreaView style={styles.safeArea}>
+        {/* ── Header ── */}
         <View style={styles.header}>
           <View>
-            <ThemedText style={styles.eyebrow}>Park oturumu</ThemedText>
-            <ThemedText type="title" style={styles.title}>
-              Aracım
-            </ThemedText>
+            <ThemedText type="overline" style={styles.overline}>Park oturumu</ThemedText>
+            <ThemedText type="title" style={styles.title}>Aracım</ThemedText>
           </View>
           {isBusy ? <ActivityIndicator color={ParkingPalette.blue} /> : null}
         </View>
 
-        <View style={styles.sessionPanel}>
-          <View style={styles.sessionCopy}>
-            <ThemedText type="subtitle" style={styles.sessionTitle}>
-              Başla ve bitir
-            </ThemedText>
-            <ThemedText style={styles.sessionText}>
-              Bulunduğun konumu park noktası olarak işaretle, fotoğraf ekle ve dönüşte yürüyüş
-              rotasını aç.
-            </ThemedText>
-          </View>
-          <View style={styles.sessionActions}>
-            <Pressable style={styles.primaryButton} onPress={startParking} disabled={isBusy}>
-              <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                Başla
+        {/* ── Session panel ── */}
+        <View style={[styles.sessionCard, Shadows.md]}>
+          <View style={styles.sessionInner}>
+            <View style={styles.sessionCopy}>
+              <ThemedText type="subtitle" style={styles.sessionTitle}>Başla ve bitir</ThemedText>
+              <ThemedText style={styles.sessionText}>
+                Bulunduğun konumu park noktası olarak işaretle, fotoğraf ekle ve dönüşte yürüyüş rotasını aç.
               </ThemedText>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={endParking}>
-              <ThemedText type="smallBold" style={styles.secondaryButtonText}>
-                Bitir
-              </ThemedText>
-            </Pressable>
+            </View>
+            <View style={styles.sessionActions}>
+              <Pressable style={styles.startBtn} onPress={startParking} disabled={isBusy}>
+                <ThemedText type="smallBold" style={styles.startBtnText}>▶  Başla</ThemedText>
+              </Pressable>
+              <Pressable style={styles.stopBtn} onPress={endParking}>
+                <ThemedText type="smallBold" style={styles.stopBtnText}>⏹  Bitir</ThemedText>
+              </Pressable>
+            </View>
           </View>
         </View>
 
-        <View style={styles.vehicleCard}>
+        {/* ── Vehicle card ── */}
+        <View style={[styles.vehicleCard, Shadows.sm]}>
           {vehicle ? (
             <>
               <View style={styles.vehicleHeader}>
-                <View style={styles.vehicleStatus} />
-                <View style={styles.vehicleTitleBlock}>
-                  <ThemedText type="smallBold" style={styles.vehicleTitle}>
-                    {vehicle.title}
-                  </ThemedText>
-                  <ThemedText type="small" style={styles.vehicleMeta}>
-                    {vehicle.source === 'ispark' ? 'İSPARK otoparkı' : 'Sokak parkı'} -{' '}
-                    {new Date(vehicle.createdAt).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                <View style={styles.vehicleDot} />
+                <View style={{ flex: 1, gap: 3 }}>
+                  <ThemedText type="smallBold" style={styles.vehicleName}>{vehicle.title}</ThemedText>
+                  <ThemedText type="caption" style={styles.vehicleMeta}>
+                    {vehicle.source === 'ispark' ? '🅿️ İSPARK otoparkı' : '🚗 Sokak parkı'} ·{' '}
+                    {new Date(vehicle.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                   </ThemedText>
                 </View>
               </View>
@@ -261,85 +197,69 @@ export default function VehicleScreen() {
             </>
           ) : (
             <View style={styles.emptyVehicle}>
-              <ThemedText type="smallBold" style={styles.vehicleTitle}>
-                Henüz park konumu yok
-              </ThemedText>
-              <ThemedText type="small" style={styles.vehicleMeta}>
-                Başla butonu bulunduğun konumu aracım olarak kaydeder.
-              </ThemedText>
+              <ThemedText style={styles.emptyEmoji}>🚙</ThemedText>
+              <ThemedText type="smallBold" style={styles.vehicleName}>Henüz park konumu yok</ThemedText>
+              <ThemedText type="caption" style={styles.vehicleMeta}>Başla butonu bulunduğun konumu aracım olarak kaydeder.</ThemedText>
             </View>
           )}
 
-          <View style={styles.actions}>
-            <Pressable style={styles.actionButton} onPress={takePhoto}>
-              <ThemedText type="smallBold" style={styles.actionText}>
-                Fotoğraf çek
-              </ThemedText>
+          <View style={styles.vehicleActions}>
+            <Pressable style={styles.actionBtn} onPress={takePhoto}>
+              <ThemedText type="smallBold" style={styles.actionBtnText}>📷  Fotoğraf çek</ThemedText>
             </Pressable>
-            <Pressable style={[styles.actionButton, styles.actionPrimary]} onPress={returnToVehicle}>
-              <ThemedText type="smallBold" style={styles.actionPrimaryText}>
-                Araca geri dön
-              </ThemedText>
+            <Pressable style={[styles.actionBtn, styles.actionBtnDark]} onPress={returnToVehicle}>
+              <ThemedText type="smallBold" style={styles.actionBtnDarkText}>🧭  Araca geri dön</ThemedText>
             </Pressable>
           </View>
         </View>
 
-        <Pressable style={styles.reportButton} onPress={reportEmptySpot} disabled={isBusy}>
-          <View>
-            <ThemedText type="smallBold" style={styles.reportTitle}>
-              Yanımda boş yer var
-            </ThemedText>
-            <ThemedText type="small" style={styles.reportText}>
-              Sokakta park arayanlara 90 dakikalık boş yer sinyali gönder.
-            </ThemedText>
+        {/* ── Report empty spot ── */}
+        <Pressable style={[styles.reportCard, Shadows.sm]} onPress={reportEmptySpot} disabled={isBusy}>
+          <View style={styles.reportInner}>
+            <View style={styles.reportIcon}>
+              <ThemedText style={{ fontSize: 22 }}>🟢</ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold" style={styles.reportTitle}>Yanımda boş yer var</ThemedText>
+              <ThemedText type="caption" style={styles.reportSub}>90 dk süreyle boş yer sinyali gönder</ThemedText>
+            </View>
           </View>
         </Pressable>
 
-        <ParkingMap reports={reports} currentLocation={currentLocation} parkedVehicle={vehicle} />
+        {/* ── Map ── */}
+        <View style={styles.mapWrap}>
+          <ParkingMap reports={reports} currentLocation={currentLocation} parkedVehicle={vehicle} />
+        </View>
 
-        <View style={styles.reportsPanel}>
+        {/* ── Street reports list ── */}
+        <View style={[styles.reportsPanel, Shadows.sm]}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="smallBold" style={styles.sectionTitle}>
-              Sokak boş yerleri
-            </ThemedText>
-            <ThemedText type="small" style={styles.sectionMeta}>
-              {reports.length} aktif bildirim
-            </ThemedText>
+            <ThemedText type="smallBold" style={{ color: ParkingPalette.ink }}>Sokak boş yerleri</ThemedText>
+            <View style={styles.reportCountBadge}>
+              <ThemedText type="caption" style={{ color: ParkingPalette.violet }}>{reports.length} aktif</ThemedText>
+            </View>
           </View>
 
           {decoratedReports.slice(0, 12).map((report) => {
-            const reportDistance =
-              'distanceMeters' in report && typeof report.distanceMeters === 'number'
-                ? report.distanceMeters
-                : undefined;
+            const reportDistance = 'distanceMeters' in report && typeof report.distanceMeters === 'number'
+              ? report.distanceMeters : undefined;
 
             return (
               <View key={report.id} style={styles.reportItem}>
                 <View style={styles.reportDot} />
-                <View style={styles.reportBody}>
-                  <ThemedText type="smallBold" style={styles.reportItemTitle}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <ThemedText type="smallBold" style={{ color: ParkingPalette.ink }}>
                     {report.note ?? 'Boş sokak park yeri'}
                   </ThemedText>
-                  <ThemedText type="small" style={styles.reportItemMeta}>
-                    {formatDistance(reportDistance) ?? 'Konum mesafesi için Başla kullan'} -{' '}
-                    {new Date(report.expiresAt).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}{' '}
-                    sonuna kadar
+                  <ThemedText type="caption" style={{ color: ParkingPalette.muted }}>
+                    {formatDistance(reportDistance) ?? 'Konum mesafesi için Başla kullan'} ·{' '}
+                    {new Date(report.expiresAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} sonuna kadar
                   </ThemedText>
                 </View>
                 <Pressable
-                  style={styles.routeMini}
-                  onPress={() =>
-                    openWalkingDirections(
-                      { latitude: report.latitude, longitude: report.longitude },
-                      'Boş sokak park yeri'
-                    )
-                  }>
-                  <ThemedText type="smallBold" style={styles.routeMiniText}>
-                    Rota
-                  </ThemedText>
+                  style={styles.routeChip}
+                  onPress={() => openWalkingDirections({ latitude: report.latitude, longitude: report.longitude }, 'Boş sokak park yeri')}>
+                  <ThemedText type="smallBold" style={{ color: ParkingPalette.blue }}>🧭</ThemedText>
                 </Pressable>
               </View>
             );
@@ -348,9 +268,7 @@ export default function VehicleScreen() {
 
         {auth.message ? (
           <View style={styles.notice}>
-            <ThemedText type="small" style={styles.noticeText}>
-              {auth.message}
-            </ThemedText>
+            <ThemedText type="small" style={{ color: '#6B5B34' }}>{auth.message}</ThemedText>
           </View>
         ) : null}
       </SafeAreaView>
@@ -359,216 +277,126 @@ export default function VehicleScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#fbfdff',
-  },
+  screen: { flex: 1, backgroundColor: '#F0F4F8' },
   content: {
     alignItems: 'center',
-    paddingTop: Platform.select({ web: 74, default: 0 }),
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingTop: Platform.select({ web: 80, default: 0 }),
+    paddingBottom: BottomTabInset + Spacing.six,
   },
   safeArea: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.three,
+    width: '100%', maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.three, gap: Spacing.three,
   },
+
+  /* Header */
   header: {
-    paddingTop: Spacing.two,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingTop: Spacing.two, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'space-between',
   },
-  eyebrow: {
-    color: ParkingPalette.violet,
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+  overline: { color: ParkingPalette.violet },
+  title: { color: ParkingPalette.ink },
+
+  /* Session */
+  sessionCard: {
+    borderRadius: Radius.lg, overflow: 'hidden',
+    backgroundColor: ParkingPalette.ink,
   },
-  title: {
-    color: ParkingPalette.ink,
-    fontSize: 44,
-    lineHeight: 48,
+  sessionInner: {
+    padding: Spacing.four, gap: Spacing.three,
+    experimental_backgroundImage: ParkingPalette.gradientViolet,
   },
-  sessionPanel: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d7c0ef',
-    backgroundColor: '#fbf8ff',
-    padding: Spacing.three,
-    gap: Spacing.three,
+  sessionCopy: { gap: 6 },
+  sessionTitle: { color: '#FFFFFF' },
+  sessionText: { color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20 },
+  sessionActions: { flexDirection: 'row', gap: Spacing.two },
+  startBtn: {
+    borderRadius: Radius.full, backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20, paddingVertical: 12,
   },
-  sessionCopy: {
-    gap: Spacing.one,
+  startBtnText: { color: ParkingPalette.violet },
+  stopBtn: {
+    borderRadius: Radius.full, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 20, paddingVertical: 12,
   },
-  sessionTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  sessionText: {
-    color: '#4d5963',
-  },
-  sessionActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  primaryButton: {
-    borderRadius: 8,
-    backgroundColor: ParkingPalette.blue,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-  },
-  secondaryButton: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  secondaryButtonText: {
-    color: ParkingPalette.ink,
-  },
+  stopBtnText: { color: '#FFFFFF' },
+
+  /* Vehicle */
   vehicleCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    padding: Spacing.three,
-    gap: Spacing.three,
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: Spacing.three,
   },
-  vehicleHeader: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    alignItems: 'center',
-  },
-  vehicleStatus: {
-    width: 12,
-    height: 42,
-    borderRadius: 6,
+  vehicleHeader: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  vehicleDot: {
+    width: 10, height: 40, borderRadius: 5,
     backgroundColor: ParkingPalette.success,
   },
-  vehicleTitleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  vehicleTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 18,
-  },
-  vehicleMeta: {
-    color: '#687783',
-  },
+  vehicleName: { color: ParkingPalette.ink, fontSize: 16 },
+  vehicleMeta: { color: ParkingPalette.muted },
   vehiclePhoto: {
-    width: '100%',
-    aspectRatio: 16 / 10,
-    borderRadius: 8,
-    backgroundColor: '#eef3f6',
+    width: '100%', aspectRatio: 16 / 10,
+    borderRadius: Radius.sm, backgroundColor: '#EDF2F7',
   },
-  emptyVehicle: {
-    gap: Spacing.one,
+  emptyVehicle: { alignItems: 'center', paddingVertical: Spacing.four, gap: 8 },
+  emptyEmoji: { fontSize: 42 },
+  vehicleActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  actionBtn: {
+    borderRadius: Radius.sm, borderWidth: 1.5, borderColor: ParkingPalette.lineSoft,
+    backgroundColor: ParkingPalette.surface,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+  actionBtnText: { color: ParkingPalette.ink },
+  actionBtnDark: {
+    backgroundColor: ParkingPalette.ink, borderColor: ParkingPalette.ink,
   },
-  actionButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  actionBtnDarkText: { color: '#FFFFFF' },
+
+  /* Report */
+  reportCard: {
+    borderRadius: Radius.md, borderWidth: 1.5,
+    borderColor: ParkingPalette.successLight,
+    backgroundColor: '#F0FDF7', padding: Spacing.three,
   },
-  actionPrimary: {
-    backgroundColor: ParkingPalette.ink,
-    borderColor: ParkingPalette.ink,
+  reportInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reportIcon: {
+    width: 44, height: 44, borderRadius: Radius.sm,
+    backgroundColor: ParkingPalette.successLight,
+    alignItems: 'center', justifyContent: 'center',
   },
-  actionText: {
-    color: ParkingPalette.ink,
-  },
-  actionPrimaryText: {
-    color: '#ffffff',
-  },
-  reportButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#f0c9bf',
-    backgroundColor: '#fff6f3',
-    padding: Spacing.three,
-  },
-  reportTitle: {
-    color: ParkingPalette.coral,
-  },
-  reportText: {
-    color: '#70524a',
-  },
+  reportTitle: { color: ParkingPalette.ink },
+  reportSub: { color: ParkingPalette.muted, marginTop: 2 },
+
+  /* Map */
+  mapWrap: { borderRadius: Radius.md, overflow: 'hidden', ...Shadows.md },
+
+  /* Reports list */
   reportsPanel: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    padding: Spacing.three,
-    gap: Spacing.two,
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: Spacing.two,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  sectionTitle: {
-    color: ParkingPalette.ink,
-  },
-  sectionMeta: {
-    color: '#687783',
+  reportCountBadge: {
+    borderRadius: Radius.full, backgroundColor: ParkingPalette.violetLight,
+    paddingHorizontal: 10, paddingVertical: 3,
   },
   reportItem: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#edf2f5',
-    paddingTop: Spacing.two,
+    flexDirection: 'row', gap: 12, alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: ParkingPalette.lineSoft, paddingTop: Spacing.two,
   },
   reportDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8, height: 8, borderRadius: 4,
     backgroundColor: ParkingPalette.violet,
   },
-  reportBody: {
-    flex: 1,
-    gap: 2,
+  routeChip: {
+    width: 36, height: 36, borderRadius: Radius.full,
+    backgroundColor: '#EBF5FF', alignItems: 'center', justifyContent: 'center',
   },
-  reportItemTitle: {
-    color: ParkingPalette.ink,
-  },
-  reportItemMeta: {
-    color: '#687783',
-  },
-  routeMini: {
-    borderRadius: 8,
-    backgroundColor: '#edf6fb',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  routeMiniText: {
-    color: ParkingPalette.blue,
-  },
+
+  /* Notice */
   notice: {
-    borderRadius: 8,
-    backgroundColor: '#fff8e9',
-    borderWidth: 1,
-    borderColor: '#f1d596',
+    borderRadius: Radius.sm, backgroundColor: ParkingPalette.amberLight,
+    borderWidth: 1, borderColor: ParkingPalette.amber,
     padding: Spacing.two,
-  },
-  noticeText: {
-    color: '#6b5b34',
   },
 });

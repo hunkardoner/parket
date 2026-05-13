@@ -15,8 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { ParkingPalette } from '@/constants/brand';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ParkingPalette, Shadows } from '@/constants/brand';
+import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { openWalkingDirections } from '@/services/directions';
 import {
   distanceInMeters,
@@ -32,37 +32,38 @@ import { Coordinates, ParkingLot, ParkingLotDetail, StreetParkingReport } from '
 
 type FilterKey = 'all' | 'nearby' | 'available' | 'street' | 'garage';
 
-const filters: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'Tümü' },
-  { key: 'nearby', label: 'Yakınımda' },
-  { key: 'available', label: 'Boş yer var' },
-  { key: 'street', label: 'Yol üstü' },
-  { key: 'garage', label: 'Açık/Kapalı' },
+const filters: { key: FilterKey; label: string; icon: string }[] = [
+  { key: 'all', label: 'Tümü', icon: '📋' },
+  { key: 'nearby', label: 'Yakınımda', icon: '📍' },
+  { key: 'available', label: 'Boş yer var', icon: '✅' },
+  { key: 'street', label: 'Yol üstü', icon: '🛣️' },
+  { key: 'garage', label: 'Açık/Kapalı', icon: '🏗️' },
 ];
 
 function statusLabel(lot: ParkingLot) {
-  if (lot.status === 'closed') {
-    return 'Kapalı';
-  }
-  if (lot.status === 'full') {
-    return 'Dolu';
-  }
-  if (lot.status === 'limited') {
-    return 'Az yer';
-  }
+  if (lot.status === 'closed') return 'Kapalı';
+  if (lot.status === 'full') return 'Dolu';
+  if (lot.status === 'limited') return 'Az yer';
   return 'Müsait';
 }
 
 function statusColor(lot: ParkingLot) {
-  if (lot.status === 'closed') {
-    return '#6f7780';
-  }
-  if (lot.status === 'full') {
-    return ParkingPalette.coral;
-  }
-  if (lot.status === 'limited') {
-    return ParkingPalette.amber;
-  }
+  if (lot.status === 'closed') return ParkingPalette.muted;
+  if (lot.status === 'full') return ParkingPalette.coral;
+  if (lot.status === 'limited') return ParkingPalette.amber;
+  return ParkingPalette.success;
+}
+
+function statusBg(lot: ParkingLot) {
+  if (lot.status === 'closed') return '#F0F3F6';
+  if (lot.status === 'full') return ParkingPalette.coralLight;
+  if (lot.status === 'limited') return ParkingPalette.amberLight;
+  return ParkingPalette.successLight;
+}
+
+function capacityColor(rate: number) {
+  if (rate > 0.85) return ParkingPalette.coral;
+  if (rate > 0.6) return ParkingPalette.amber;
   return ParkingPalette.success;
 }
 
@@ -112,11 +113,8 @@ export default function ParkingScreen() {
 
   useEffect(() => {
     loadLastKnownLocation().then((location) => {
-      if (location) {
-        setCurrentLocation(location);
-      }
+      if (location) setCurrentLocation(location);
     });
-
     load()
       .catch((loadError: Error) => setError(loadError.message))
       .finally(() => setLoading(false));
@@ -124,13 +122,9 @@ export default function ParkingScreen() {
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await load();
-    } catch (refreshError) {
-      setError(refreshError instanceof Error ? refreshError.message : 'Veri yenilenemedi.');
-    } finally {
-      setRefreshing(false);
-    }
+    try { await load(); }
+    catch (refreshError) { setError(refreshError instanceof Error ? refreshError.message : 'Veri yenilenemedi.'); }
+    finally { setRefreshing(false); }
   }, [load]);
 
   const locate = useCallback(async () => {
@@ -139,10 +133,7 @@ export default function ParkingScreen() {
       await saveLastKnownLocation(coordinates);
       setCurrentLocation(coordinates);
     } catch (locationError) {
-      Alert.alert(
-        'Konum alınamadı',
-        locationError instanceof Error ? locationError.message : 'Konum servisi kullanılamıyor.'
-      );
+      Alert.alert('Konum alınamadı', locationError instanceof Error ? locationError.message : 'Konum servisi kullanılamıyor.');
     }
   }, []);
 
@@ -157,33 +148,18 @@ export default function ParkingScreen() {
 
     return decorated
       .filter((lot) => {
-        if (!normalizedQuery) {
-          return true;
-        }
-        return [lot.name, lot.district, lot.type]
-          .join(' ')
-          .toLocaleLowerCase('tr-TR')
-          .includes(normalizedQuery);
+        if (!normalizedQuery) return true;
+        return [lot.name, lot.district, lot.type].join(' ').toLocaleLowerCase('tr-TR').includes(normalizedQuery);
       })
       .filter((lot) => {
-        if (filter === 'available') {
-          return lot.isOpen && lot.emptyCapacity > 0;
-        }
-        if (filter === 'street') {
-          return lot.type.toLocaleLowerCase('tr-TR').includes('yol');
-        }
-        if (filter === 'garage') {
-          return !lot.type.toLocaleLowerCase('tr-TR').includes('yol');
-        }
+        if (filter === 'available') return lot.isOpen && lot.emptyCapacity > 0;
+        if (filter === 'street') return lot.type.toLocaleLowerCase('tr-TR').includes('yol');
+        if (filter === 'garage') return !lot.type.toLocaleLowerCase('tr-TR').includes('yol');
         return true;
       })
       .sort((a, b) => {
-        if (filter === 'nearby' && a.distanceMeters !== undefined && b.distanceMeters !== undefined) {
-          return a.distanceMeters - b.distanceMeters;
-        }
-        if (currentLocation && a.distanceMeters !== undefined && b.distanceMeters !== undefined) {
-          return a.distanceMeters - b.distanceMeters;
-        }
+        if (filter === 'nearby' && a.distanceMeters !== undefined && b.distanceMeters !== undefined) return a.distanceMeters - b.distanceMeters;
+        if (currentLocation && a.distanceMeters !== undefined && b.distanceMeters !== undefined) return a.distanceMeters - b.distanceMeters;
         return b.emptyCapacity - a.emptyCapacity;
       });
   }, [currentLocation, filter, lots, query]);
@@ -192,127 +168,83 @@ export default function ParkingScreen() {
     const openLots = lots.filter((lot) => lot.isOpen);
     const emptyCapacity = lots.reduce((sum, lot) => sum + lot.emptyCapacity, 0);
     const totalCapacity = lots.reduce((sum, lot) => sum + lot.capacity, 0);
-    return {
-      total: lots.length,
-      open: openLots.length,
-      emptyCapacity,
-      occupancy: totalCapacity > 0 ? 1 - emptyCapacity / totalCapacity : 0,
-    };
+    return { total: lots.length, open: openLots.length, emptyCapacity, occupancy: totalCapacity > 0 ? 1 - emptyCapacity / totalCapacity : 0 };
   }, [lots]);
 
   const displayedLots = visibleLots.slice(0, 3);
 
   const markLotAsParked = useCallback(async (lot: ParkingLot) => {
     await saveParkedVehicle({
-      id: makeVehicleId(),
-      source: 'ispark',
-      title: lot.name,
-      latitude: lot.latitude,
-      longitude: lot.longitude,
-      addressHint: `${lot.district} - ${lot.type}`,
-      lotId: lot.id,
+      id: makeVehicleId(), source: 'ispark', title: lot.name,
+      latitude: lot.latitude, longitude: lot.longitude,
+      addressHint: `${lot.district} - ${lot.type}`, lotId: lot.id,
       createdAt: new Date().toISOString(),
     });
-
     await notifyParkingSaved(lot.name);
     Alert.alert('Park konumu kaydedildi', 'Aracım sekmesinden yürüyüş rotasını açabilirsin.');
   }, []);
 
-  const loadDetail = useCallback(
-    async (lot: ParkingLot) => {
-      if (detailsById[lot.id]) {
-        return;
-      }
-
-      setDetailLoadingId(lot.id);
-      try {
-        const detail = await fetchParkingDetail(lot.id);
-        if (detail) {
-          setDetailsById((current) => ({ ...current, [lot.id]: detail }));
-        }
-      } catch (detailError) {
-        Alert.alert(
-          'Fiyat bilgisi alınamadı',
-          detailError instanceof Error ? detailError.message : 'İSPARK detay servisi yanıt vermedi.'
-        );
-      } finally {
-        setDetailLoadingId(null);
-      }
-    },
-    [detailsById]
-  );
+  const loadDetail = useCallback(async (lot: ParkingLot) => {
+    if (detailsById[lot.id]) return;
+    setDetailLoadingId(lot.id);
+    try {
+      const detail = await fetchParkingDetail(lot.id);
+      if (detail) setDetailsById((current) => ({ ...current, [lot.id]: detail }));
+    } catch (detailError) {
+      Alert.alert('Fiyat bilgisi alınamadı', detailError instanceof Error ? detailError.message : 'İSPARK detay servisi yanıt vermedi.');
+    } finally { setDetailLoadingId(null); }
+  }, [detailsById]);
 
   return (
     <ScrollView
       style={styles.screen}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={ParkingPalette.blue} />}
       contentContainerStyle={styles.content}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <View>
-            <ThemedText style={styles.eyebrow}>En yakın 3 İSPARK</ThemedText>
-            <ThemedText type="title" style={styles.title}>
-              Parket!
-            </ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.heroPanel}>
-          <View style={styles.heroText}>
-            <ThemedText type="subtitle" style={styles.heroTitle}>
-              Sana en yakın otoparklar
-            </ThemedText>
+        {/* ── Hero section ── */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroInner}>
+            <ThemedText type="overline" style={styles.heroOverline}>İstanbul park asistanı</ThemedText>
+            <ThemedText type="title" style={styles.heroTitle}>Parket!</ThemedText>
             <ThemedText style={styles.heroCopy}>
-              Bütün İstanbul listesini dökmek yerine konumuna göre en yakın 3 otoparkın doluluk,
-              çalışma saati ve fiyat detayını gösterir.
+              Konumuna göre en yakın 3 otoparkın doluluk, çalışma saati ve fiyat detayını gösterir.
             </ThemedText>
+            <Pressable style={styles.heroCta} onPress={locate}>
+              <ThemedText type="smallBold" style={styles.heroCtaText}>📍  Konumuma göre sırala</ThemedText>
+            </Pressable>
           </View>
-          <Pressable style={styles.primaryButton} onPress={locate}>
-            <ThemedText type="smallBold" style={styles.primaryButtonText}>
-              Konumuma göre sırala
-            </ThemedText>
-          </Pressable>
         </View>
 
-        <View style={styles.statsRow}>
-          <StatCard label="Otopark" value={stats.total.toString()} accent={ParkingPalette.blue} />
-          <StatCard label="Açık" value={stats.open.toString()} accent={ParkingPalette.success} />
-          <StatCard
-            label="Boş kapasite"
-            value={stats.emptyCapacity.toLocaleString('tr-TR')}
-            accent={ParkingPalette.amber}
-          />
-          <StatCard
-            label="Doluluk"
-            value={formatPercent(stats.occupancy)}
-            accent={ParkingPalette.coral}
-          />
+        {/* ── Stats grid ── */}
+        <View style={styles.statsGrid}>
+          <StatCard icon="🅿️" label="Otopark" value={stats.total.toString()} accent={ParkingPalette.blue} />
+          <StatCard icon="🟢" label="Açık" value={stats.open.toString()} accent={ParkingPalette.success} />
+          <StatCard icon="🔓" label="Boş kapasite" value={stats.emptyCapacity.toLocaleString('tr-TR')} accent={ParkingPalette.amber} />
+          <StatCard icon="📊" label="Doluluk" value={formatPercent(stats.occupancy)} accent={ParkingPalette.coral} />
         </View>
 
-        <View style={styles.searchPanel}>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Otopark, ilçe veya tip ara"
-            placeholderTextColor="#7a8790"
-            style={styles.searchInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+        {/* ── Search & filters ── */}
+        <View style={styles.searchCard}>
+          <View style={styles.searchInputWrap}>
+            <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Otopark, ilçe veya tip ara…"
+              placeholderTextColor={ParkingPalette.muted}
+              style={styles.searchInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {filters.map((item) => (
               <Pressable
                 key={item.key}
-                style={[styles.filterButton, filter === item.key && styles.filterButtonActive]}
-                onPress={() => {
-                  setFilter(item.key);
-                  if (item.key === 'nearby' && !currentLocation) {
-                    void locate();
-                  }
-                }}>
-                <ThemedText
-                  type="smallBold"
-                  style={[styles.filterText, filter === item.key && styles.filterTextActive]}>
+                style={[styles.filterChip, filter === item.key && styles.filterChipActive]}
+                onPress={() => { setFilter(item.key); if (item.key === 'nearby' && !currentLocation) void locate(); }}>
+                <ThemedText style={styles.filterEmoji}>{item.icon}</ThemedText>
+                <ThemedText type="smallBold" style={[styles.filterText, filter === item.key && styles.filterTextActive]}>
                   {item.label}
                 </ThemedText>
               </Pressable>
@@ -320,23 +252,26 @@ export default function ParkingScreen() {
           </ScrollView>
         </View>
 
+        {/* ── Street reports toggle ── */}
         <Pressable
-          style={[styles.streetButton, showStreetReports && styles.streetButtonActive]}
-          onPress={() => setShowStreetReports((value) => !value)}>
-          <View>
-            <ThemedText type="smallBold" style={styles.streetTitle}>
-              Sokakta park yeri arıyorum
-            </ThemedText>
-            <ThemedText type="small" style={styles.streetText}>
-              Yakındaki kullanıcıların yanımda boş yer var bildirimlerini göster.
-            </ThemedText>
+          style={[styles.streetCard, showStreetReports && styles.streetCardActive]}
+          onPress={() => setShowStreetReports((v) => !v)}>
+          <View style={styles.streetCardInner}>
+            <View style={styles.streetIconBadge}>
+              <ThemedText style={styles.streetEmoji}>🚗</ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold" style={styles.streetTitle}>Sokakta park yeri arıyorum</ThemedText>
+              <ThemedText type="caption" style={styles.streetSub}>Yakındaki boş yer bildirimlerini göster</ThemedText>
+            </View>
+            <View style={styles.streetBadge}>
+              <ThemedText type="smallBold" style={styles.streetBadgeText}>{reports.length}</ThemedText>
+            </View>
           </View>
-          <ThemedText type="smallBold" style={styles.streetCount}>
-            {reports.length}
-          </ThemedText>
         </Pressable>
 
-        <View style={styles.mapPanel}>
+        {/* ── Map ── */}
+        <View style={styles.mapWrap}>
           <ParkingMap
             lots={displayedLots}
             reports={showStreetReports ? reports : []}
@@ -345,24 +280,22 @@ export default function ParkingScreen() {
           />
         </View>
 
+        {/* ── Error ── */}
         {error ? (
-          <View style={styles.notice}>
-            <ThemedText type="smallBold" style={styles.noticeTitle}>
-              Veri alınamadı
-            </ThemedText>
-            <ThemedText type="small" style={styles.noticeText}>
-              {error}
-            </ThemedText>
+          <View style={styles.errorCard}>
+            <ThemedText type="smallBold" style={styles.errorTitle}>⚠️  Veri alınamadı</ThemedText>
+            <ThemedText type="small" style={styles.errorText}>{error}</ThemedText>
           </View>
         ) : null}
 
+        {/* ── Lot list ── */}
         {isLoading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator color={ParkingPalette.blue} />
-            <ThemedText type="small">İSPARK verisi yükleniyor</ThemedText>
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color={ParkingPalette.blue} size="large" />
+            <ThemedText type="small" style={{ color: ParkingPalette.muted }}>İSPARK verisi yükleniyor…</ThemedText>
           </View>
         ) : (
-          <View style={styles.list}>
+          <View style={styles.lotList}>
             {displayedLots.map((lot) => (
               <LotCard
                 key={lot.id}
@@ -371,12 +304,7 @@ export default function ParkingScreen() {
                 isDetailLoading={detailLoadingId === lot.id}
                 onDetail={() => loadDetail(lot)}
                 onPark={() => markLotAsParked(lot)}
-                onDirections={() =>
-                  openWalkingDirections(
-                    { latitude: lot.latitude, longitude: lot.longitude },
-                    lot.name
-                  )
-                }
+                onDirections={() => openWalkingDirections({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}
               />
             ))}
           </View>
@@ -386,434 +314,273 @@ export default function ParkingScreen() {
   );
 }
 
-function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
+/* ── Sub-components ──────────────────────────────── */
+
+function StatCard({ icon, label, value, accent }: { icon: string; label: string; value: string; accent: string }) {
   return (
-    <View style={styles.statCard}>
+    <View style={[styles.statCard, Shadows.sm]}>
       <View style={[styles.statAccent, { backgroundColor: accent }]} />
-      <ThemedText type="small" style={styles.statLabel}>
-        {label}
-      </ThemedText>
-      <ThemedText type="smallBold" style={styles.statValue}>
-        {value}
-      </ThemedText>
+      <ThemedText style={styles.statIcon}>{icon}</ThemedText>
+      <ThemedText type="caption" style={styles.statLabel}>{label}</ThemedText>
+      <ThemedText type="subtitle" style={[styles.statValue, { color: accent }]}>{value}</ThemedText>
     </View>
   );
 }
 
-function LotCard({
-  lot,
-  detail,
-  isDetailLoading,
-  onDetail,
-  onPark,
-  onDirections,
-}: {
-  lot: ParkingLot;
-  detail?: ParkingLotDetail;
-  isDetailLoading: boolean;
-  onDetail: () => void;
-  onPark: () => void;
-  onDirections: () => void;
+function LotCard({ lot, detail, isDetailLoading, onDetail, onPark, onDirections }: {
+  lot: ParkingLot; detail?: ParkingLotDetail; isDetailLoading: boolean;
+  onDetail: () => void; onPark: () => void; onDirections: () => void;
 }) {
   const distance = formatDistance(lot.distanceMeters);
   const tariffLines = detail?.tariff?.split(';').filter(Boolean) ?? [];
+  const fillPct = Math.round(lot.occupancyRate * 100);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardTitleBlock}>
-          <ThemedText type="smallBold" style={styles.cardTitle}>
-            {lot.name}
-          </ThemedText>
-          <ThemedText type="small" style={styles.cardMeta}>
-            {lot.district} - {lot.type} {distance ? `- ${distance}` : ''}
+    <View style={[styles.lotCard, Shadows.md]}>
+      {/* Header */}
+      <View style={styles.lotHeader}>
+        <View style={styles.lotTitleBlock}>
+          <ThemedText type="smallBold" style={styles.lotName}>{lot.name}</ThemedText>
+          <ThemedText type="caption" style={styles.lotMeta}>
+            {lot.district} · {lot.type}{distance ? ` · ${distance}` : ''}
           </ThemedText>
         </View>
-        <View style={[styles.statusPill, { borderColor: statusColor(lot) }]}>
-          <ThemedText type="smallBold" style={[styles.statusText, { color: statusColor(lot) }]}>
+        <View style={[styles.statusPill, { backgroundColor: statusBg(lot) }]}>
+          <ThemedText type="caption" style={[styles.statusText, { color: statusColor(lot) }]}>
             {statusLabel(lot)}
           </ThemedText>
         </View>
       </View>
 
-      <View style={styles.capacityBar}>
-        <View style={[styles.capacityFill, { width: `${Math.round(lot.occupancyRate * 100)}%` }]} />
+      {/* Capacity bar */}
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${fillPct}%`, backgroundColor: capacityColor(lot.occupancyRate) }]} />
       </View>
 
-      <View style={styles.cardMetrics}>
-        <ThemedText type="small">
-          <ThemedText type="smallBold">{lot.emptyCapacity}</ThemedText> / {lot.capacity} boş
-        </ThemedText>
-        <ThemedText type="small">{lot.workHours}</ThemedText>
-        <ThemedText type="small">{lot.freeTime} dk ücretsiz</ThemedText>
+      {/* Metrics */}
+      <View style={styles.metricsRow}>
+        <View style={styles.metricItem}>
+          <ThemedText type="caption" style={styles.metricLabel}>Boş</ThemedText>
+          <ThemedText type="smallBold" style={styles.metricValue}>{lot.emptyCapacity}/{lot.capacity}</ThemedText>
+        </View>
+        <View style={styles.metricItem}>
+          <ThemedText type="caption" style={styles.metricLabel}>Saat</ThemedText>
+          <ThemedText type="smallBold" style={styles.metricValue}>{lot.workHours}</ThemedText>
+        </View>
+        <View style={styles.metricItem}>
+          <ThemedText type="caption" style={styles.metricLabel}>Ücretsiz</ThemedText>
+          <ThemedText type="smallBold" style={styles.metricValue}>{lot.freeTime} dk</ThemedText>
+        </View>
       </View>
 
+      {/* Detail panel */}
       {detail ? (
         <View style={styles.detailPanel}>
-          {detail.address ? (
-            <ThemedText type="small" style={styles.detailText}>
-              {detail.address}
-            </ThemedText>
-          ) : null}
+          {detail.address ? <ThemedText type="small" style={styles.detailAddr}>{detail.address}</ThemedText> : null}
           {tariffLines.length > 0 ? (
             <View style={styles.tariffGrid}>
               {tariffLines.slice(0, 6).map((line) => (
-                <View key={line} style={styles.tariffItem}>
-                  <ThemedText type="small" style={styles.tariffText}>
-                    {line.trim()}
-                  </ThemedText>
+                <View key={line} style={styles.tariffChip}>
+                  <ThemedText type="caption" style={styles.tariffText}>{line.trim()}</ThemedText>
                 </View>
               ))}
             </View>
           ) : null}
           {detail.monthlyFee ? (
-            <ThemedText type="smallBold" style={styles.detailText}>
-              Aylık abonman: {detail.monthlyFee.toLocaleString('tr-TR')} TL
+            <ThemedText type="smallBold" style={styles.monthlyFee}>
+              Aylık abonman: {detail.monthlyFee.toLocaleString('tr-TR')} ₺
             </ThemedText>
           ) : null}
         </View>
       ) : null}
 
-      <View style={styles.actions}>
-        <Pressable style={styles.actionButton} onPress={onDetail}>
-          <ThemedText type="smallBold" style={styles.actionText}>
-            {isDetailLoading ? 'Yükleniyor' : 'Fiyatı göster'}
+      {/* Actions */}
+      <View style={styles.lotActions}>
+        <Pressable style={styles.actionBtn} onPress={onDetail}>
+          <ThemedText type="smallBold" style={styles.actionBtnText}>
+            {isDetailLoading ? '⏳' : '💰'}  {isDetailLoading ? 'Yükleniyor' : 'Fiyat'}
           </ThemedText>
         </Pressable>
-        <Pressable style={[styles.actionButton, styles.actionPrimary]} onPress={onPark}>
-          <ThemedText type="smallBold" style={styles.actionPrimaryText}>
-            Buraya park ettim
-          </ThemedText>
+        <Pressable style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={onPark}>
+          <ThemedText type="smallBold" style={styles.actionBtnPrimaryText}>🅿️  Park ettim</ThemedText>
         </Pressable>
-        <Pressable style={styles.actionButton} onPress={onDirections}>
-          <ThemedText type="smallBold" style={styles.actionText}>
-            Rota
-          </ThemedText>
+        <Pressable style={styles.actionBtn} onPress={onDirections}>
+          <ThemedText type="smallBold" style={styles.actionBtnText}>🧭  Rota</ThemedText>
         </Pressable>
       </View>
     </View>
   );
 }
 
+/* ── Styles ──────────────────────────────────────── */
+
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#fbfdff',
-  },
+  screen: { flex: 1, backgroundColor: '#F0F4F8' },
   content: {
     alignItems: 'center',
-    paddingTop: Platform.select({ web: 74, default: 0 }),
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingTop: Platform.select({ web: 80, default: 0 }),
+    paddingBottom: BottomTabInset + Spacing.six,
   },
   safeArea: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.three,
+    width: '100%', maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.three, gap: Spacing.three,
   },
-  header: {
-    paddingTop: Spacing.two,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-  },
-  eyebrow: {
-    color: ParkingPalette.violet,
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: ParkingPalette.ink,
-    fontSize: 44,
-    lineHeight: 48,
-  },
-  authPanel: {
-    alignItems: 'flex-end',
-    gap: Spacing.one,
-    maxWidth: 190,
-  },
-  authTitle: {
-    color: ParkingPalette.ink,
-  },
-  authMessage: {
-    color: '#6f7780',
-    textAlign: 'right',
-  },
-  oauthButton: {
-    minWidth: 88,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-  },
-  oauthText: {
-    color: ParkingPalette.blue,
-  },
-  appleButton: {
+
+  /* Hero */
+  heroCard: {
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
     backgroundColor: ParkingPalette.ink,
-    borderColor: ParkingPalette.ink,
+    ...Shadows.lg,
   },
-  appleText: {
-    color: '#ffffff',
+  heroInner: {
+    padding: Spacing.four, gap: 12,
+    experimental_backgroundImage: ParkingPalette.gradientHero,
   },
-  primaryButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 8,
+  heroOverline: { color: ParkingPalette.blueLight },
+  heroTitle: { color: '#FFFFFF', fontSize: 38, lineHeight: 44 },
+  heroCopy: { color: 'rgba(255,255,255,0.75)', fontSize: 14, lineHeight: 20 },
+  heroCta: {
+    alignSelf: 'flex-start', marginTop: 4,
+    borderRadius: Radius.full,
     backgroundColor: ParkingPalette.blue,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20, paddingVertical: 12,
+    ...Shadows.glow(ParkingPalette.blue),
   },
-  primaryButtonText: {
-    color: '#ffffff',
-  },
-  secondaryButton: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  secondaryButtonText: {
-    color: ParkingPalette.coral,
-  },
-  heroPanel: {
-    borderRadius: 8,
-    backgroundColor: ParkingPalette.sand,
-    padding: Spacing.three,
-    gap: Spacing.three,
-    borderWidth: 1,
-    borderColor: '#e3c986',
-  },
-  heroText: {
-    gap: Spacing.one,
-  },
-  heroTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  heroCopy: {
-    color: '#45525c',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
+  heroCtaText: { color: '#FFFFFF' },
+
+  /* Stats */
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   statCard: {
-    minWidth: 134,
-    flexGrow: 1,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    padding: Spacing.three,
-    gap: 6,
+    minWidth: 148, flexGrow: 1,
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: 4,
   },
-  statAccent: {
-    width: 28,
-    height: 4,
-    borderRadius: 2,
+  statAccent: { width: 32, height: 4, borderRadius: 2, marginBottom: 4 },
+  statIcon: { fontSize: 18 },
+  statLabel: { color: ParkingPalette.muted },
+  statValue: { fontSize: 22 },
+
+  /* Search */
+  searchCard: {
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: Spacing.two,
+    ...Shadows.sm,
   },
-  statLabel: {
-    color: '#687783',
+  searchInputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: Radius.sm, backgroundColor: '#F0F5FA',
+    paddingHorizontal: 14, gap: 10,
   },
-  statValue: {
-    color: ParkingPalette.ink,
-    fontSize: 20,
-  },
-  searchPanel: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    padding: Spacing.two,
-    gap: Spacing.two,
-  },
+  searchIcon: { fontSize: 16 },
   searchInput: {
-    minHeight: 46,
-    borderRadius: 8,
-    backgroundColor: '#f4f9fc',
-    color: ParkingPalette.ink,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    fontWeight: '600',
+    flex: 1, minHeight: 46,
+    color: ParkingPalette.ink, fontSize: 15, fontWeight: '600',
   },
-  filterRow: {
-    gap: Spacing.two,
+  filterRow: { gap: Spacing.two, paddingVertical: 2 },
+  filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: Radius.full, borderWidth: 1.5, borderColor: ParkingPalette.lineSoft,
+    backgroundColor: ParkingPalette.surface,
+    paddingHorizontal: 14, paddingVertical: 8,
   },
-  filterButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    backgroundColor: '#ffffff',
+  filterChipActive: {
+    backgroundColor: ParkingPalette.blue, borderColor: ParkingPalette.blue,
   },
-  filterButtonActive: {
-    backgroundColor: ParkingPalette.blue,
-    borderColor: ParkingPalette.blue,
+  filterEmoji: { fontSize: 14 },
+  filterText: { color: ParkingPalette.inkSecondary },
+  filterTextActive: { color: '#FFFFFF' },
+
+  /* Street reports */
+  streetCard: {
+    borderRadius: Radius.md, borderWidth: 1.5, borderColor: ParkingPalette.violetLight,
+    backgroundColor: '#F9F7FF', padding: Spacing.three,
   },
-  filterText: {
-    color: ParkingPalette.ink,
+  streetCardActive: { backgroundColor: '#EEEAFF', borderColor: ParkingPalette.violet },
+  streetCardInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  streetIconBadge: {
+    width: 40, height: 40, borderRadius: Radius.sm,
+    backgroundColor: ParkingPalette.violetLight,
+    alignItems: 'center', justifyContent: 'center',
   },
-  filterTextActive: {
-    color: '#ffffff',
+  streetEmoji: { fontSize: 18 },
+  streetTitle: { color: ParkingPalette.ink },
+  streetSub: { color: ParkingPalette.muted, marginTop: 2 },
+  streetBadge: {
+    minWidth: 32, height: 32, borderRadius: Radius.full,
+    backgroundColor: ParkingPalette.violet,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8,
   },
-  streetButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d7c0ef',
-    backgroundColor: '#fbf8ff',
-    padding: Spacing.three,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
+  streetBadgeText: { color: '#FFFFFF', fontSize: 14 },
+
+  /* Map */
+  mapWrap: { borderRadius: Radius.md, overflow: 'hidden', ...Shadows.md },
+
+  /* Error */
+  errorCard: {
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.coralLight,
+    borderWidth: 1, borderColor: ParkingPalette.coral,
+    padding: Spacing.three, gap: 6,
   },
-  streetButtonActive: {
-    backgroundColor: '#f1eafe',
-    borderColor: ParkingPalette.violet,
+  errorTitle: { color: ParkingPalette.coral },
+  errorText: { color: '#7A3B39' },
+
+  /* Loading */
+  loadingWrap: { alignItems: 'center', padding: Spacing.five, gap: Spacing.three },
+
+  /* Lot list */
+  lotList: { gap: Spacing.three },
+  lotCard: {
+    borderRadius: Radius.md, backgroundColor: ParkingPalette.surface,
+    padding: Spacing.three, gap: 14,
   },
-  streetTitle: {
-    color: ParkingPalette.violet,
+  lotHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
+  lotTitleBlock: { flex: 1, gap: 3 },
+  lotName: { color: ParkingPalette.ink, fontSize: 16 },
+  lotMeta: { color: ParkingPalette.muted },
+  statusPill: { borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 5 },
+  statusText: { fontSize: 11 },
+
+  /* Capacity bar */
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: '#EDF2F7', overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3 },
+
+  /* Metrics */
+  metricsRow: { flexDirection: 'row', gap: Spacing.two },
+  metricItem: {
+    flex: 1, borderRadius: Radius.xs, backgroundColor: '#F5F8FB',
+    padding: Spacing.two, gap: 2, alignItems: 'center',
   },
-  streetText: {
-    color: '#665f70',
-  },
-  streetCount: {
-    color: ParkingPalette.violet,
-    fontSize: 22,
-  },
-  mapPanel: {
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  notice: {
-    borderRadius: 8,
-    backgroundColor: '#fff3ef',
-    borderWidth: 1,
-    borderColor: '#ffd2c6',
-    padding: Spacing.three,
-    gap: 4,
-  },
-  noticeTitle: {
-    color: ParkingPalette.coral,
-  },
-  noticeText: {
-    color: '#755045',
-  },
-  loading: {
-    alignItems: 'center',
-    padding: Spacing.four,
-    gap: Spacing.two,
-  },
-  list: {
-    gap: Spacing.three,
-  },
-  card: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  cardTitleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  cardTitle: {
-    color: ParkingPalette.ink,
-    fontSize: 17,
-  },
-  cardMeta: {
-    color: '#6a7680',
-  },
-  statusPill: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  statusText: {
-    fontSize: 13,
-  },
-  capacityBar: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e9f2f7',
-    overflow: 'hidden',
-  },
-  capacityFill: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: ParkingPalette.coral,
-  },
-  cardMetrics: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
+  metricLabel: { color: ParkingPalette.muted },
+  metricValue: { color: ParkingPalette.ink, fontSize: 13 },
+
+  /* Detail */
   detailPanel: {
-    borderRadius: 8,
-    backgroundColor: '#f6fbfd',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    padding: Spacing.two,
-    gap: Spacing.two,
+    borderRadius: Radius.sm, backgroundColor: '#F5F8FB',
+    borderWidth: 1, borderColor: ParkingPalette.lineSoft,
+    padding: Spacing.two, gap: Spacing.two,
   },
-  detailText: {
-    color: '#43515b',
+  detailAddr: { color: ParkingPalette.inkSecondary },
+  tariffGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tariffChip: {
+    borderRadius: Radius.xs, backgroundColor: ParkingPalette.surface,
+    borderWidth: 1, borderColor: ParkingPalette.lineSoft,
+    paddingHorizontal: 10, paddingVertical: 5,
   },
-  tariffGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+  tariffText: { color: ParkingPalette.ink },
+  monthlyFee: { color: ParkingPalette.blue },
+
+  /* Actions */
+  lotActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  actionBtn: {
+    borderRadius: Radius.sm, borderWidth: 1.5, borderColor: ParkingPalette.lineSoft,
+    backgroundColor: ParkingPalette.surface,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
-  tariffItem: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+  actionBtnText: { color: ParkingPalette.ink },
+  actionBtnPrimary: {
+    backgroundColor: ParkingPalette.blue, borderColor: ParkingPalette.blue,
+    ...Shadows.glow(ParkingPalette.blue),
   },
-  tariffText: {
-    color: ParkingPalette.ink,
-  },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  actionButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  actionPrimary: {
-    borderColor: ParkingPalette.blue,
-    backgroundColor: ParkingPalette.blue,
-  },
-  actionText: {
-    color: ParkingPalette.ink,
-  },
-  actionPrimaryText: {
-    color: '#ffffff',
-  },
+  actionBtnPrimaryText: { color: '#FFFFFF' },
 });
