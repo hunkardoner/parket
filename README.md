@@ -14,9 +14,13 @@
 
 ## Özellikler
 
+- Login-first açılış: e-posta login, register, şifre sıfırlama, Google ve Apple Sign in
+- Onboarding: uygulama girişinde konum izni ister; kamera izni yalnızca fotoğraf çekme anında istenir
+- Statik Türkçe demo Kullanım Şartları ve Gizlilik Politikası ekranları
 - İstanbul otopark doluluk oranları, kapasite ve çalışma saatleri
+- Konuma göre en yakın 3 İSPARK otoparkı
+- Otopark arıyorum tabı: 300 m, 500 m, 1 km, 2 km ve 5 km aralığında arama
 - Otopark kartında fiyat tarifesi ve aylık abonman detayı
-- Konuma göre yakın otopark sıralama
 - Otopark veya sokak park konumunu "Aracım" olarak kaydetme
 - Araca geri dönmek için yürüme rotasını Apple/Google Maps ile açma
 - Sokakta park edilen yerin fotoğrafını çekme

@@ -7,20 +7,22 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+import { ParkingPalette } from '@/constants/brand';
+
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: ParkingPalette.ink,
+    background: '#fbfdff',
+    backgroundElement: '#edf6fb',
+    backgroundSelected: '#d7ecf8',
+    textSecondary: '#66727c',
   },
   dark: {
     text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    background: '#101820',
+    backgroundElement: '#1b2a35',
+    backgroundSelected: '#263f51',
+    textSecondary: '#b7c4cd',
   },
 } as const;
 

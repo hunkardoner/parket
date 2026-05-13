@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "parket",
+    "name": "Parket!",
     "slug": "parket",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,15 +8,29 @@
     "scheme": "parket",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.parket.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Parket, otoparkları yakınlığa göre sıralamak ve aracına yürüyüş rotası açmak için konumunu kullanır.",
+        "NSCameraUsageDescription": "Parket, sokakta park ettiğin yeri fotoğraflaman için kamerayı kullanır.",
+        "NSPhotoLibraryUsageDescription": "Parket, park yeri fotoğraflarını göstermek için fotoğraf erişimi kullanır."
+      }
     },
     "android": {
+      "package": "com.parket.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -25,10 +39,25 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Parket, yakın otoparkları ve araca dönüş rotasını göstermek için konumunu kullanır."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Parket, sokakta park ettiğin yeri fotoğraflaman için kamerayı kullanır.",
+          "photosPermission": "Parket, park yeri fotoğraflarını göstermek için fotoğraf erişimi kullanır."
+        }
+      ],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#4a9cd3",
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
