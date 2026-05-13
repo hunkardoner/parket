@@ -1,56 +1,58 @@
-# Welcome to your Expo app 👋
+# Parket!
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+İstanbul'daki İSPARK otoparklarının gerçek zamanlı doluluk durumunu, çalışma saatlerini ve fiyat bilgisini gösteren Expo mobil uygulaması.
 
-## Get started
+## Teknik temel
 
-1. Install dependencies
+- Expo SDK 56 beta (`expo@~56.0.0-preview.9`)
+- Expo Router native tabs
+- Supabase Auth: Google OAuth ve iOS Apple Sign in
+- Supabase backend: sokak park yeri bildirimleri için `street_parking_reports`
+- İSPARK API: `https://api.ibb.gov.tr/ispark/Park`
+- İSPARK detay/fiyat API: `https://api.ibb.gov.tr/ispark/ParkDetay?parkID=<id>`
+- Expo Location, Image Picker, Notifications ve React Native Maps
 
-   ```bash
-   npm install
-   ```
+## Özellikler
 
-2. Start the app
+- İstanbul otopark doluluk oranları, kapasite ve çalışma saatleri
+- Otopark kartında fiyat tarifesi ve aylık abonman detayı
+- Konuma göre yakın otopark sıralama
+- Otopark veya sokak park konumunu "Aracım" olarak kaydetme
+- Araca geri dönmek için yürüme rotasını Apple/Google Maps ile açma
+- Sokakta park edilen yerin fotoğrafını çekme
+- "Yanımda boş yer var" bildirimi
+- "Sokakta park yeri arıyorum" görünümü
+- Park kaydı için Expo local notification
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Kurulum
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Supabase kullanmadan da uygulama açılır; auth demo modda görünür ve sokak park bildirimleri cihazda yerel tutulur.
 
-### Other setup steps
+## Supabase ayarları
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+`.env` içine:
 
-## Learn more
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Supabase SQL editörde [supabase/schema.sql](/Users/hunkar/Projects/parket/supabase/schema.sql) dosyasındaki tablo ve RLS politikalarını çalıştır.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Google OAuth için Supabase Dashboard içinde Google provider'ı aç. Redirect URL olarak Expo scheme için `parket://auth/callback` ve geliştirme ortamındaki Expo redirect URL'lerini ekle. Apple Sign in için iOS bundle id `com.parket.app`.
 
-## Join the community
+## Komutlar
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run ios
+npm run android
+npm run web
+npx tsc --noEmit
+```
+# parket
