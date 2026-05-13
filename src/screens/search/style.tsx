@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     paddingTop: Platform.select({ web: 80, default: 0 }),
-    paddingBottom: BottomTabInset + Spacing.six,
+    paddingBottom: Platform.select({ web: 100, default: BottomTabInset + Spacing.six }),
   },
   safeArea: {
     width: '100%', maxWidth: MaxContentWidth,

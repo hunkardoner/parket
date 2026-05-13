@@ -185,3 +185,49 @@ create policy "Authenticated users can insert custom lots"
 create policy "Creators can delete custom lots"
   on public.custom_parking_lots for delete to authenticated
   using (created_by = auth.uid());
+
+-- ═══════════════════════════════════════════════════════
+-- User type management (manager vs regular user)
+-- ═══════════════════════════════════════════════════════
+-- To assign a user as a parking manager, run:
+--   select set_user_as_manager('<user-uuid>', '<custom-lot-uuid>');
+--
+-- This sets user_metadata.user_type = 'manager' on their auth profile
+-- and links them as the manager_user_id of the given custom lot.
+
+create or replace function public.set_user_as_manager(
+  target_user_id uuid,
+  lot_id uuid
+) returns void
+language plpgsql
+security definer
+as $$
+begin
+  -- Update the user metadata to mark them as manager
+  update auth.users
+  set raw_user_meta_data = raw_user_meta_data || '{"user_type": "manager"}'::jsonb
+  where id = target_user_id;
+
+  -- Link the lot to this manager
+  update public.custom_parking_lots
+  set manager_user_id = target_user_id
+  where id = lot_id;
+end;
+$$;
+
+-- Revoke manager status
+create or replace function public.revoke_manager(target_user_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update auth.users
+  set raw_user_meta_data = raw_user_meta_data || '{"user_type": "user"}'::jsonb
+  where id = target_user_id;
+
+  update public.custom_parking_lots
+  set manager_user_id = null
+  where manager_user_id = target_user_id;
+end;
+$$;

@@ -13,6 +13,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 const DEMO_SESSION_KEY = 'parket:demo-session';
 
+export type UserType = 'user' | 'manager';
 export type AuthUser = Pick<User, 'id' | 'email'> & Partial<User>;
 
 function extractParam(url: string, key: string) {
@@ -326,15 +327,23 @@ export function useAuthSession() {
   }, []);
 
   const user = useMemo<AuthUser | null>(() => session?.user ?? demoUser ?? null, [demoUser, session]);
+  const userType = useMemo<UserType>(() => {
+    const meta = user?.user_metadata;
+    if (meta?.user_type === 'manager') return 'manager';
+    return 'user';
+  }, [user]);
+  const isManager = userType === 'manager';
 
   return {
     hasAuthenticatedAccess: Boolean(user),
     isConfigured: isSupabaseConfigured,
     isLoading,
     isAppleAvailable,
+    isManager,
     message,
     session,
     user,
+    userType,
     continueAsDemo,
     resetPassword,
     signInWithEmail,

@@ -4,6 +4,7 @@ import {
   useMemo,
   useState } from 'react';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -89,6 +90,7 @@ async function getCurrentCoordinates() {
 
 export default function ParkingScreen() {
   const auth = useAuthSession();
+  const router = useRouter();
   const [lots, setLots] = useState<ParkingLot[]>([]);
   const [reports, setReports] = useState<StreetParkingReport[]>([]);
   const [detailsById, setDetailsById] = useState<Record<number, ParkingLotDetail>>({});
@@ -241,6 +243,22 @@ export default function ParkingScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* ── Manager panel button (only for managers) ── */}
+        {auth.isManager ? (
+          <Pressable style={[styles.managerCard, styles.shadowMd]} onPress={() => router.push('/manager')}>
+            <View style={styles.managerCardInner}>
+              <View style={styles.managerIcon}>
+                <ThemedText style={{ fontSize: 22 }}>⚙️</ThemedText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText type="smallBold" style={styles.managerTitle}>Yönetici Paneli</ThemedText>
+                <ThemedText type="caption" style={styles.managerSub}>Otoparkınızı yönetin · Kapasite ve fiyat kontrolü</ThemedText>
+              </View>
+              <ThemedText style={styles.managerArrow}>→</ThemedText>
+            </View>
+          </Pressable>
+        ) : null}
 
         {/* ── Stats grid ── */}
         <View style={styles.statsGrid}>

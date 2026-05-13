@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     paddingTop: Platform.select({ web: 80, default: 0 }),
-    paddingBottom: BottomTabInset + Spacing.six,
+    paddingBottom: Platform.select({ web: 100, default: BottomTabInset + Spacing.six }),
   },
   safeArea: {
     width: '100%', maxWidth: MaxContentWidth,
@@ -231,4 +231,30 @@ export const styles = StyleSheet.create({
     ...Shadows.glow(ParkingPalette.blue),
   },
   actionBtnPrimaryText: { color: '#FFFFFF' },
+
+  /* Manager card */
+  managerCard: {
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: ParkingPalette.amber,
+    backgroundColor: ParkingPalette.amberLight,
+    padding: Spacing.three,
+  },
+  managerCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  managerIcon: {
+    width: 44, height: 44, borderRadius: Radius.sm,
+    backgroundColor: 'rgba(255, 179, 71, 0.3)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  managerTitle: { color: ParkingPalette.ink, fontSize: 15 },
+  managerSub: { color: ParkingPalette.inkSecondary, marginTop: 2 },
+  managerArrow: {
+    color: ParkingPalette.amber,
+    fontSize: 20,
+    fontWeight: '700',
+  },
 });
