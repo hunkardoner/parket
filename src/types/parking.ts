@@ -33,7 +33,7 @@ export type ParkingLotDetail = ParkingLot & {
 
 export type ParkedVehicle = {
   id: string;
-  source: 'street' | 'ispark';
+  source: 'street' | 'ispark' | 'custom';
   title: string;
   latitude: number;
   longitude: number;

@@ -1,7 +1,7 @@
 import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet } from 'react-native';
+import { getLotPinColor, parkedVehiclePinColor, reportPinColor, styles } from './parking-map/style.native';
 
-import { IstanbulCenter, ParkingPalette } from '@/constants/brand';
+import { IstanbulCenter } from '@/constants/brand';
 import { Coordinates, ParkingLot, ParkedVehicle, StreetParkingReport } from '@/types/parking';
 
 type ParkingMapProps = {
@@ -11,19 +11,6 @@ type ParkingMapProps = {
   parkedVehicle?: ParkedVehicle | null;
   onLotPress?: (lot: ParkingLot) => void;
 };
-
-function colorForLot(lot: ParkingLot) {
-  if (lot.status === 'closed') {
-    return '#6f7780';
-  }
-  if (lot.status === 'full') {
-    return ParkingPalette.coral;
-  }
-  if (lot.status === 'limited') {
-    return ParkingPalette.amber;
-  }
-  return ParkingPalette.blue;
-}
 
 export function ParkingMap({
   lots = [],
@@ -47,7 +34,7 @@ export function ParkingMap({
         <Marker
           key={`lot-${lot.id}`}
           coordinate={{ latitude: lot.latitude, longitude: lot.longitude }}
-          pinColor={colorForLot(lot)}
+          pinColor={getLotPinColor(lot.status)}
           title={lot.name}
           description={`${lot.emptyCapacity}/${lot.capacity} boş - ${lot.workHours}`}
           onPress={() => onLotPress?.(lot)}
@@ -58,7 +45,7 @@ export function ParkingMap({
         <Marker
           key={`report-${report.id}`}
           coordinate={{ latitude: report.latitude, longitude: report.longitude }}
-          pinColor={ParkingPalette.violet}
+          pinColor={reportPinColor}
           title="Yanımda boş yer var"
           description={report.note ?? 'Sokak park yeri bildirimi'}
         />
@@ -68,7 +55,7 @@ export function ParkingMap({
         <Marker
           key="parked-vehicle"
           coordinate={{ latitude: parkedVehicle.latitude, longitude: parkedVehicle.longitude }}
-          pinColor={ParkingPalette.success}
+          pinColor={parkedVehiclePinColor}
           title="Aracım"
           description={parkedVehicle.title}
         />
@@ -76,12 +63,3 @@ export function ParkingMap({
     </MapView>
   );
 }
-
-const styles = StyleSheet.create({
-  map: {
-    height: 260,
-    width: '100%',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-});

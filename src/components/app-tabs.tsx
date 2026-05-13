@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'react-native';
+import { getNativeTabsLabelStyle } from './app-tabs/style.native';
 
 import { Colors } from '@/constants/theme';
 
@@ -11,7 +12,7 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      labelStyle={getNativeTabsLabelStyle(colors.text)}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Otoparklar</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -30,6 +31,14 @@ export default function AppTabs() {
 
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>Aracım</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="history">
+        <NativeTabs.Trigger.Label>Geçmiş</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"

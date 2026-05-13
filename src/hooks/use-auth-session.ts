@@ -173,28 +173,43 @@ export function useAuthSession() {
   );
 
   const signUpWithEmail = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<'ok' | 'duplicate' | 'error'> => {
       setMessage(null);
 
       if (!email || password.length < 6) {
         setMessage('Kayıt için geçerli e-posta ve en az 6 karakter şifre gerekli.');
-        return false;
+        return 'error';
       }
 
       if (!supabase) {
         await continueAsDemo(email);
         setMessage('Demo modda kayıt tamamlandı.');
-        return true;
+        return 'ok';
       }
 
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
+        // Supabase may return user_already_exists or similar errors
+        const isDuplicate =
+          error.message?.toLowerCase().includes('already') ||
+          error.message?.toLowerCase().includes('user_already_exists');
+        if (isDuplicate) {
+          setMessage('Bu e-posta zaten sistemde kayıtlı. Giriş yap ekranından devam edebilirsin.');
+          return 'duplicate';
+        }
         setMessage(error.message);
-        return false;
+        return 'error';
+      }
+
+      // When email confirmation is enabled, Supabase returns a user with empty
+      // identities array if the email already exists (instead of an error).
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setMessage('Bu e-posta zaten sistemde kayıtlı. Giriş yap ekranından devam edebilirsin.');
+        return 'duplicate';
       }
 
       setMessage('Kayıt oluşturuldu. E-posta doğrulaması açıksa gelen kutunu kontrol et.');
-      return true;
+      return 'ok';
     },
     [continueAsDemo]
   );

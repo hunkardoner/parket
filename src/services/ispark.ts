@@ -1,4 +1,5 @@
 import { Coordinates, ParkingLot, ParkingLotDetail, ParkingStatus } from '@/types/parking';
+import { getTariff } from '@/services/parking-tariffs';
 
 const PARKS_URL = 'https://api.ibb.gov.tr/ispark/Park';
 const PARK_DETAIL_URL = 'https://api.ibb.gov.tr/ispark/ParkDetay';
@@ -102,20 +103,24 @@ export async function fetchParkingLots(signal?: AbortSignal): Promise<ParkingLot
 }
 
 export async function fetchParkingDetail(parkId: number): Promise<ParkingLotDetail | null> {
-  const response = await fetch(`${PARK_DETAIL_URL}?parkID=${parkId}`);
+  // Fetch İSPARK detail and admin tariff in parallel
+  const [detailResponse, adminTariff] = await Promise.all([
+    fetch(`${PARK_DETAIL_URL}?parkID=${parkId}`),
+    getTariff(parkId),
+  ]);
 
-  if (!response.ok) {
-    throw new Error(`İSPARK fiyat detayı alınamadı (${response.status})`);
+  if (!detailResponse.ok) {
+    throw new Error(`İSPARK fiyat detayı alınamadı (${detailResponse.status})`);
   }
 
-  const rows = (await response.json()) as RawParkDetail[];
+  const rows = (await detailResponse.json()) as RawParkDetail[];
   const detail = rows[0];
 
   if (!detail) {
     return null;
   }
 
-  return {
+  const base: ParkingLotDetail = {
     ...normalizePark(detail),
     address: detail.address,
     updateDate: detail.updateDate,
@@ -123,4 +128,20 @@ export async function fetchParkingDetail(parkId: number): Promise<ParkingLotDeta
     tariff: detail.tariff,
     locationName: detail.locationName,
   };
+
+  // Admin tariff overrides İSPARK API data when available
+  if (adminTariff) {
+    const tariffParts: string[] = [];
+    if (adminTariff.hourlyRate) tariffParts.push(`Saatlik: ${adminTariff.hourlyRate} ₺`);
+    if (adminTariff.dailyRate) tariffParts.push(`Günlük: ${adminTariff.dailyRate} ₺`);
+    if (adminTariff.monthlyRate) tariffParts.push(`Aylık: ${adminTariff.monthlyRate} ₺`);
+    if (adminTariff.tariffText) tariffParts.push(adminTariff.tariffText);
+    if (adminTariff.notes) tariffParts.push(adminTariff.notes);
+
+    if (tariffParts.length > 0) base.tariff = tariffParts.join(';');
+    if (adminTariff.monthlyRate) base.monthlyFee = adminTariff.monthlyRate;
+    base.freeTime = adminTariff.freeMinutes;
+  }
+
+  return base;
 }

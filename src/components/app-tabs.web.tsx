@@ -1,23 +1,13 @@
-import {
-  TabList,
-  TabListProps,
-  Tabs,
-  TabSlot,
-  TabTrigger,
-  TabTriggerSlotProps,
-} from 'expo-router/ui';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { TabList, TabListProps, Tabs, TabSlot, TabTrigger, TabTriggerSlotProps, } from 'expo-router/ui';
+import { Pressable, View } from 'react-native';
+import { styles } from './app-tabs/style.web';
 
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
-
-import { ParkingPalette, Shadows } from '@/constants/brand';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+      <TabSlot style={styles.tabSlot} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
@@ -28,6 +18,12 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Aracım</TabButton>
+          </TabTrigger>
+          <TabTrigger name="history" href="/history" asChild>
+            <TabButton>Geçmiş</TabButton>
+          </TabTrigger>
+          <TabTrigger name="manager" href="/manager" asChild>
+            <TabButton>Yönetici</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -52,7 +48,7 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} style={styles.tabListContainer}>
-      <View style={[styles.innerContainer, Shadows.md]}>
+      <View style={[styles.innerContainer, styles.shadowMd]}>
         <ThemedText type="smallBold" style={styles.brandText}>
           🅿️ Parket!
         </ThemedText>
@@ -61,50 +57,3 @@ export function CustomTabList(props: TabListProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tabListContainer: {
-    position: 'absolute',
-    width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radius.full,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.one,
-    maxWidth: MaxContentWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    backdropFilter: 'blur(16px)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 223, 233, 0.5)',
-  },
-  brandText: {
-    marginRight: 'auto',
-    color: ParkingPalette.ink,
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  pressed: { opacity: 0.7 },
-  tabBtn: {
-    paddingVertical: Spacing.one + 2,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.full,
-  },
-  tabBtnActive: {
-    backgroundColor: ParkingPalette.blue,
-  },
-  tabLabel: {
-    color: ParkingPalette.muted,
-  },
-  tabLabelActive: {
-    color: '#FFFFFF',
-  },
-});

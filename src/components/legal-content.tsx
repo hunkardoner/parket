@@ -1,8 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import { styles } from './legal-content/style';
 
 import { ThemedText } from '@/components/themed-text';
-import { ParkingPalette } from '@/constants/brand';
-import { Spacing } from '@/constants/theme';
 
 export type LegalKind = 'terms' | 'privacy';
 
@@ -80,32 +79,3 @@ export function LegalContent({ kind }: { kind: LegalKind }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.three,
-  },
-  header: {
-    gap: Spacing.one,
-  },
-  title: {
-    color: ParkingPalette.ink,
-  },
-  updatedAt: {
-    color: '#6c7881',
-  },
-  section: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ParkingPalette.line,
-    backgroundColor: '#ffffff',
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  sectionTitle: {
-    color: ParkingPalette.violet,
-  },
-  body: {
-    color: '#4d5963',
-  },
-});
