@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { usePathname, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -26,6 +27,8 @@ type AuthMode = 'login' | 'register' | 'forgot' | LegalKind;
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useAuthSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isCheckingOnboarding, setCheckingOnboarding] = useState(true);
   const [isOnboardingComplete, setOnboardingComplete] = useState(false);
 
@@ -39,6 +42,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     setOnboardingComplete(true);
   }, []);
+
+  useEffect(() => {
+    if (auth.hasAuthenticatedAccess && pathname.startsWith('/auth/')) {
+      router.replace('/');
+    }
+  }, [auth.hasAuthenticatedAccess, pathname, router]);
 
   if (auth.isLoading || isCheckingOnboarding) {
     return (

@@ -30,7 +30,7 @@ function extractParam(url: string, key: string) {
   }, null);
 }
 
-async function completeOAuthFromUrl(url: string) {
+export async function completeOAuthFromUrl(url: string) {
   if (!supabase) {
     return;
   }
@@ -86,6 +86,21 @@ export function useAuthSession() {
           setMessage('Supabase env tanımlı değil; auth demo modda çalışır.');
         }
         return;
+      }
+
+      try {
+        const currentUrl =
+          Platform.OS === 'web' && typeof window !== 'undefined'
+            ? window.location.href
+            : await Linking.getInitialURL();
+
+        if (currentUrl) {
+          await completeOAuthFromUrl(currentUrl);
+        }
+      } catch (oauthError) {
+        if (isMounted) {
+          setMessage(oauthError instanceof Error ? oauthError.message : 'OAuth dönüşü işlenemedi.');
+        }
       }
 
       const { data } = await supabase.auth.getSession();
