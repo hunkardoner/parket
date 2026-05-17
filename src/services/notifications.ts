@@ -67,7 +67,7 @@ export async function notifyParkingSaved(title: string) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Parket hatırlatma',
-      body: 'Park konumun hala kayıtlı. Araca dönüş rotasını tek dokunuşla açabilirsin.',
+      body: 'Park konumun hala kayıtlı. Araca dönüş haritasını tek dokunuşla açabilirsin.',
       data: { type: 'park-reminder' },
       sound: false,
     },

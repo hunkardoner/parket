@@ -113,6 +113,14 @@ export function useAuthSession() {
 
     void loadSession();
 
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => {
+      void completeOAuthFromUrl(url).catch((oauthError) => {
+        if (isMounted) {
+          setMessage(oauthError instanceof Error ? oauthError.message : 'OAuth dönüşü işlenemedi.');
+        }
+      });
+    });
+
     const { data } =
       supabase?.auth.onAuthStateChange((_event, nextSession) => {
         setSession(nextSession);
@@ -120,6 +128,7 @@ export function useAuthSession() {
 
     return () => {
       isMounted = false;
+      linkingSubscription.remove();
       data?.subscription.unsubscribe();
     };
   }, []);
@@ -174,7 +183,10 @@ export function useAuthSession() {
   );
 
   const signUpWithEmail = useCallback(
-    async (email: string, password: string): Promise<'ok' | 'duplicate' | 'error'> => {
+    async (
+      email: string,
+      password: string
+    ): Promise<'verification_sent' | 'ok' | 'duplicate' | 'error'> => {
       setMessage(null);
 
       if (!email || password.length < 6) {
@@ -188,7 +200,13 @@ export function useAuthSession() {
         return 'ok';
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: Linking.createURL('/auth/callback'),
+        },
+      });
       if (error) {
         // Supabase may return user_already_exists or similar errors
         const isDuplicate =
@@ -209,7 +227,12 @@ export function useAuthSession() {
         return 'duplicate';
       }
 
-      setMessage('Kayıt oluşturuldu. E-posta doğrulaması açıksa gelen kutunu kontrol et.');
+      if (!data.session) {
+        setMessage('Doğrulama bağlantısı e-postana gönderildi. Hesabını açmak için bağlantıya dokun.');
+        return 'verification_sent';
+      }
+
+      setMessage('Kayıt tamamlandı.');
       return 'ok';
     },
     [continueAsDemo]

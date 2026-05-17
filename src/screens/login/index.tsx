@@ -35,7 +35,7 @@ export function LoginScreen({ auth }: LoginScreenProps) {
       }
       if (mode === 'register') {
         const result = await auth.signUpWithEmail(email.trim(), password);
-        if (result === 'duplicate') {
+        if (result === 'duplicate' || result === 'verification_sent') {
           setMode('login');
           setPassword('');
         }
@@ -77,7 +77,7 @@ export function LoginScreen({ auth }: LoginScreenProps) {
             Parket!
           </ThemedText>
           <ThemedText style={styles.brandCopy}>
-            Yakındaki İSPARK otoparklarını, sokak park sinyallerini ve aracına dönüş rotasını
+            Yakındaki İSPARK otoparklarını, sokak park sinyallerini ve aracına dönüş haritasını
             tek ekrandan yönet.
           </ThemedText>
         </View>

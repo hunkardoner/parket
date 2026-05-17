@@ -14,7 +14,7 @@ import { activityIndicatorColor, styles } from './style';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuthSession } from '@/hooks/use-auth-session';
-import { openWalkingDirections } from '@/services/directions';
+import { openInAppMap } from '@/services/directions';
 import {
   deleteHistoryEntry,
   listHistory,
@@ -149,8 +149,8 @@ export default function HistoryScreen() {
                 </Pressable>
                 <Pressable
                   style={styles.routeBtn}
-                  onPress={() => openWalkingDirections({ latitude: entry.latitude, longitude: entry.longitude }, entry.title)}>
-                  <ThemedText type="smallBold" style={styles.routeBtnText}>🧭 Rota aç</ThemedText>
+                  onPress={() => openInAppMap({ latitude: entry.latitude, longitude: entry.longitude }, entry.title)}>
+                  <ThemedText type="smallBold" style={styles.routeBtnText}>🗺 Haritada aç</ThemedText>
                 </Pressable>
                 <Pressable style={styles.deleteBtn} onPress={() => handleDelete(entry)}>
                   <ThemedText type="caption" style={styles.deleteIcon}>🗑</ThemedText>

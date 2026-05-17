@@ -19,7 +19,7 @@ import { activityIndicatorColor, styles } from './style';
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
 import { useAuthSession } from '@/hooks/use-auth-session';
-import { openWalkingDirections } from '@/services/directions';
+import { openInAppMap } from '@/services/directions';
 import { formatDistance, distanceInMeters } from '@/services/ispark';
 import { loadLastKnownLocation, saveLastKnownLocation } from '@/services/location-store';
 import {
@@ -129,8 +129,8 @@ export default function VehicleScreen() {
 
   const returnToVehicle = useCallback(async () => {
     if (!vehicle) { Alert.alert('Kayıtlı araç yok', 'Önce Başla ile park konumunu kaydet.'); return; }
-    await openWalkingDirections({ latitude: vehicle.latitude, longitude: vehicle.longitude }, vehicle.title);
-  }, [vehicle]);
+    router.push('/vehicle-active');
+  }, [router, vehicle]);
 
   const reportEmptySpot = useCallback(async () => {
     setBusy(true);
@@ -174,7 +174,7 @@ export default function VehicleScreen() {
             <View style={styles.sessionCopy}>
               <ThemedText type="subtitle" style={styles.sessionTitle}>Başla ve bitir</ThemedText>
               <ThemedText style={styles.sessionText}>
-                Bulunduğun konumu park noktası olarak işaretle, fotoğraf ekle ve dönüşte yürüyüş rotasını aç.
+                Bulunduğun konumu park noktası olarak işaretle, fotoğraf ekle ve dönüşte uygulama içi haritada bul.
               </ThemedText>
             </View>
             <View style={styles.sessionActions}>
@@ -274,7 +274,7 @@ export default function VehicleScreen() {
                 </View>
                 <Pressable
                   style={styles.routeChip}
-                  onPress={() => openWalkingDirections({ latitude: report.latitude, longitude: report.longitude }, 'Boş sokak park yeri')}>
+                  onPress={() => openInAppMap({ latitude: report.latitude, longitude: report.longitude }, 'Boş sokak park yeri')}>
                   <ThemedText type="smallBold" style={styles.routeIconText}>🧭</ThemedText>
                 </Pressable>
               </View>

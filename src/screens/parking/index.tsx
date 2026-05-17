@@ -30,7 +30,7 @@ import {
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { openWalkingDirections } from '@/services/directions';
+import { openInAppMap } from '@/services/directions';
 import {
   distanceInMeters,
   fetchParkingDetail,
@@ -208,7 +208,7 @@ export default function ParkingScreen() {
       { latitude: lot.latitude, longitude: lot.longitude },
       auth.user?.id,
       () => {
-        Alert.alert('Park konumu kaydedildi', 'Aracım sekmesinden yürüyüş rotasını açabilirsin.');
+        Alert.alert('Park konumu kaydedildi', 'Aracım sekmesinden uygulama içi haritada görebilirsin.');
       },
     );
   }, [auth.user?.id]);
@@ -349,7 +349,7 @@ export default function ParkingScreen() {
                 isDetailLoading={detailLoadingId === lot.id}
                 onDetail={() => loadDetail(lot)}
                 onPark={() => markLotAsParked(lot)}
-                onDirections={() => openWalkingDirections({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}
+                onDirections={() => openInAppMap({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}
               />
             ))}
           </View>
@@ -450,7 +450,7 @@ function LotCard({ lot, detail, isDetailLoading, onDetail, onPark, onDirections 
           <ThemedText type="smallBold" style={styles.actionBtnPrimaryText}>🅿️  Park ettim</ThemedText>
         </Pressable>
         <Pressable style={styles.actionBtn} onPress={onDirections}>
-          <ThemedText type="smallBold" style={styles.actionBtnText}>🧭  Rota</ThemedText>
+          <ThemedText type="smallBold" style={styles.actionBtnText}>🗺  Harita</ThemedText>
         </Pressable>
       </View>
     </View>

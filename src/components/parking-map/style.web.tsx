@@ -44,6 +44,10 @@ export const styles = StyleSheet.create({
     backgroundColor: '#e7f8ef',
     borderColor: ParkingPalette.success,
   },
+  targetPin: {
+    backgroundColor: '#e7f1f8',
+    borderColor: ParkingPalette.blue,
+  },
   reportPin: {
     backgroundColor: '#f1eafe',
     borderColor: ParkingPalette.violet,

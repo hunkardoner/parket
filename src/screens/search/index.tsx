@@ -16,7 +16,7 @@ import { styles } from './style';
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { openWalkingDirections } from '@/services/directions';
+import { openInAppMap } from '@/services/directions';
 import { distanceInMeters, fetchParkingLots, formatDistance } from '@/services/ispark';
 import { loadLastKnownLocation, saveLastKnownLocation } from '@/services/location-store';
 import { listCustomLots, CATEGORY_LABELS } from '@/services/custom-parking';
@@ -166,8 +166,8 @@ export default function ParkingSearchScreen() {
                 </ThemedText>
                 <Pressable
                   style={styles.routeChip}
-                  onPress={() => openWalkingDirections({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}>
-                  <ThemedText type="smallBold" style={styles.routeChipText}>🧭 Rota</ThemedText>
+                  onPress={() => openInAppMap({ latitude: lot.latitude, longitude: lot.longitude }, lot.name)}>
+                  <ThemedText type="smallBold" style={styles.routeChipText}>🗺 Harita</ThemedText>
                 </Pressable>
               </View>
             </View>

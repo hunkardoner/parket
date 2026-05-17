@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.parket.app",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Parket, otoparkları yakınlığa göre sıralamak ve aracına yürüyüş rotası açmak için konumunu kullanır.",
+        "NSLocationWhenInUseUsageDescription": "Parket, otoparkları yakınlığa göre sıralamak ve araca dönüş haritasını göstermek için konumunu kullanır.",
         "NSCameraUsageDescription": "Parket, sokakta park ettiğin yeri fotoğraflaman için kamerayı kullanır.",
         "NSPhotoLibraryUsageDescription": "Parket, park yeri fotoğraflarını göstermek için fotoğraf erişimi kullanır."
       }
@@ -44,7 +44,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Parket, yakın otoparkları ve araca dönüş rotasını göstermek için konumunu kullanır."
+          "locationWhenInUsePermission": "Parket, yakın otoparkları ve araca dönüş haritasını göstermek için konumunu kullanır."
         }
       ],
       [
@@ -62,6 +62,13 @@
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
+        }
+      ],
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Parket, yakın otoparkları ve araca dönüş haritasını göstermek için konumunu kullanır."
         }
       ]
     ],

@@ -1,14 +1,23 @@
-import { View } from 'react-native';
+import { StyleProp, View, ViewStyle } from 'react-native';
 import { styles } from './parking-map/style.web';
 
 import { Coordinates, ParkingLot, ParkedVehicle, StreetParkingReport } from '@/types/parking';
 import { ThemedText } from '@/components/themed-text';
+
+type MapTarget = Coordinates & {
+  id?: string;
+  title: string;
+  description?: string;
+};
 
 type ParkingMapProps = {
   lots?: ParkingLot[];
   reports?: StreetParkingReport[];
   currentLocation?: Coordinates | null;
   parkedVehicle?: ParkedVehicle | null;
+  target?: MapTarget | null;
+  focusKey?: number;
+  style?: StyleProp<ViewStyle>;
   onLotPress?: (lot: ParkingLot) => void;
 };
 
@@ -17,11 +26,13 @@ export function ParkingMap({
   reports = [],
   currentLocation,
   parkedVehicle,
+  target,
+  style,
 }: ParkingMapProps) {
   const availableLots = lots.filter((lot) => lot.status === 'open').slice(0, 6);
 
   return (
-    <View style={styles.mapFallback}>
+    <View style={[styles.mapFallback, style]}>
       <View style={styles.row}>
         <ThemedText type="smallBold" style={styles.title}>
           Harita mobil cihazda açılır
@@ -40,6 +51,12 @@ export function ParkingMap({
         {parkedVehicle ? (
           <View style={[styles.pin, styles.vehiclePin]}>
             <ThemedText type="smallBold">Aracım</ThemedText>
+          </View>
+        ) : null}
+        {target ? (
+          <View style={[styles.pin, styles.targetPin]}>
+            <ThemedText type="smallBold" numberOfLines={1}>{target.title}</ThemedText>
+            <ThemedText type="small">Hedef</ThemedText>
           </View>
         ) : null}
         {availableLots.map((lot) => (

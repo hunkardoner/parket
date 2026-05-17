@@ -15,7 +15,6 @@ import { styles } from './style';
 
 import { ParkingMap } from '@/components/parking-map';
 import { ThemedText } from '@/components/themed-text';
-import { openWalkingDirections } from '@/services/directions';
 import { distanceInMeters, formatDistance } from '@/services/ispark';
 import { clearParkedVehicle, loadParkedVehicle } from '@/services/local-store';
 import { createStreetReport } from '@/services/street-reports';
@@ -32,6 +31,7 @@ export default function VehicleActiveScreen() {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [distanceToVehicle, setDistanceToVehicle] = useState<number | undefined>(undefined);
   const [hasAutoFreed, setHasAutoFreed] = useState(false);
+  const [mapFocusKey, setMapFocusKey] = useState(0);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
 
   // Load the parked vehicle
@@ -123,10 +123,7 @@ export default function VehicleActiveScreen() {
 
   const handleNavigate = useCallback(async () => {
     if (!vehicle) return;
-    await openWalkingDirections(
-      { latitude: vehicle.latitude, longitude: vehicle.longitude },
-      vehicle.title
-    );
+    setMapFocusKey((current) => current + 1);
   }, [vehicle]);
 
   if (!vehicle) return null;
@@ -142,6 +139,8 @@ export default function VehicleActiveScreen() {
           currentLocation={userLocation}
           parkedVehicle={vehicle}
           reports={[]}
+          focusKey={mapFocusKey}
+          style={styles.fullMap}
         />
       </View>
 

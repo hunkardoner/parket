@@ -63,7 +63,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         <OnboardingCard
           icon="🅿️"
           title="Aracımı park ettim"
-          body="Sokakta veya otoparkta park ettiğin noktayı kaydet, dönüşte yürüyüş rotasını aç."
+          body="Sokakta veya otoparkta park ettiğin noktayı kaydet, dönüşte uygulama içi haritada bul."
         />
         <OnboardingCard
           icon="🟢"

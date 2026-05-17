@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   shadowLg: Shadows.lg,
   screen: { flex: 1, backgroundColor: '#F0F4F8' },
   mapContainer: { ...StyleSheet.absoluteFill },
+  fullMap: { flex: 1, height: '100%', borderRadius: 0 },
 
   overlay: {
     flex: 1,

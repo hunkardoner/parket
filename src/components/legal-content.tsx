@@ -34,11 +34,11 @@ const content = {
     sections: [
       {
         title: 'Toplanan bilgiler',
-        body: 'Parket!, otoparkları yakınlığa göre sıralamak ve aracına dönüş rotası oluşturmak için konum bilgisini kullanır. Kamera yalnızca kullanıcı park yerini fotoğraflamak istediğinde izin ister.',
+        body: 'Parket!, otoparkları yakınlığa göre sıralamak ve araca dönüş haritasını göstermek için konum bilgisini kullanır. Kamera yalnızca kullanıcı park yerini fotoğraflamak istediğinde izin ister.',
       },
       {
         title: 'Konum kullanımı',
-        body: 'Konum verisi yakındaki otoparkları bulmak, sokak park bildirimi oluşturmak ve araca geri dönüş rotası açmak için işlenir. Kullanıcı onayı olmadan arka planda sürekli konum takibi yapılmaz.',
+        body: 'Konum verisi yakındaki otoparkları bulmak, sokak park bildirimi oluşturmak ve araca dönüş haritasını göstermek için işlenir. Kullanıcı onayı olmadan arka planda sürekli konum takibi yapılmaz.',
       },
       {
         title: 'Fotoğraflar',
@@ -46,7 +46,7 @@ const content = {
       },
       {
         title: 'Üçüncü taraf servisler',
-        body: 'Kimlik doğrulama için Supabase, harici hesap sağlayıcıları ve harita yönlendirmeleri kullanılabilir. Bu servislerin kendi gizlilik politikaları ayrıca geçerlidir.',
+        body: 'Kimlik doğrulama için Supabase ve harici hesap sağlayıcıları kullanılabilir. Harita görünümü uygulama içinde, platformun yerel harita altyapısıyla gösterilir.',
       },
     ],
   },

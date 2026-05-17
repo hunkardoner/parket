@@ -25,4 +25,11 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  unsupportedText: {
+    minHeight: 260,
+    padding: 16,
+    color: ParkingPalette.muted,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
 });
